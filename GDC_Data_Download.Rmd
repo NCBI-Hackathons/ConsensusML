@@ -185,6 +185,9 @@ qfiles %>% count() #473
 # head(qfiles)
 ```
 
+NOTE: OS and CCSK have no mRNAseq. TARGET-RT has only 5 patient samples with RNAseq on GDC
+
+
 #Create ID Map for Manifest, Clinical, and Expression Files
 
 ```{r}
@@ -208,8 +211,8 @@ idx <- sapply(res.expn$associated_entities , nrow) %>% grep(2, .)
 ```{r}
 #check that these are the expected files/samples which more than 1 ID associated
 
-# res.expn$associated_entities[idx]
-# res.expn$cases[idx]
+res.expn$associated_entities[idx]
+res.expn$cases[idx]
 ```
 
 ```{r}
@@ -353,9 +356,22 @@ gdc_set_cache(directory = "~/Documents/GitHub/RNAseq_Cancer_Biomarkers")
 
 clinFile <- gdcdata(uuids = manifest.clin$id)
 clinFile
-
 ```
 
+
+The downloaded data is each in thier own directories, with the file UUID as the directory name.
+Need to organize and move the Clinical Data so it is more easily usable. 
+
+```{r}
+system("ls -1")
+system("pwd")
+
+system("find . -type f -name '*.xlsx' -exec mv {} . \;")
+
+#note this below works since there were NOT other directories except the file UUID dirs.
+#Do not use this if you have others present (though non-empty directories will just result in an error)
+system("for dir in $(ls -1d */); do rmdir $dir; done")
+```
 
 
 
