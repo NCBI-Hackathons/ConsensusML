@@ -4,8 +4,9 @@
 #eg. each individual patient has a single expression-file 
 
 
-catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALSE){
+catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALSE, sep="\t"){
   library(magrittr)
+  options(stringsAsFactors = FALSE)
   #filenames is a character vector of all filenames. 
   #regex is a string with the pattern to extract the patient ID , eg "^.+(Kasumi|MV4)", from filenames 
   #cols is the character vector or numeric vector of the columns to select and concatenate. 
@@ -18,7 +19,7 @@ catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALS
         set_colnames(.[1,] ) %>%  #set colnames from the first line 
         .[-1, ] #remove the header row from matrix
     }else{
-      aFile <- read.delim(filename, sep="\t", header=header, as.is=TRUE)
+      aFile <- read.delim(filename, sep=sep, header=header, as.is=TRUE)
     }
     
     output <- list()
@@ -46,3 +47,6 @@ catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALS
   
   return(catedMatrices)
 }
+
+
+

@@ -223,7 +223,7 @@ ID.map <- res.expn[ !grepl("list|data.frame", sapply(res.expn, class)) ] %>%
   bind_cols(., bind_rows(res.expn$associated_entities[-idx])) #associated_entities was a list of data.frames, converted a single data.frame with bind_rows()
 
 head(ID.map)
-dim(ID.map) # 469  20
+dim(ID.map) #474
 
 # write.csv(ID.map, "GCD_TARGET_Data_Manifest_AML_NBL_WT_RT.csv", row.names = FALSE)
 ```
@@ -242,13 +242,16 @@ qfiles <- qfiles %>%
 qfiles %>% count() #469
 ```
 
-
 ```{r}
 manifest_df = qfiles %>% manifest()
 head(manifest_df)
 dim(manifest_df) #469 
-```
 
+
+# write.table(manifest_df, "TARGET_Manifest_RNAseq_Counts.txt", row.names = FALSE, sep="\t", quote=FALSE)
+```
+ 
+ 
 
 #Download the files 
 
@@ -260,31 +263,67 @@ dim(manifest_df) #469
 
 ```{r}
 #Set your destination directory
-gdc_set_cache(directory = "/Volumes/meshinchi_s/Hackathon_2019/")
+gdc_set_cache(directory = "Expn_Data/")
+
 ```
+
 
 ```{r}
 #download step
-fnames = gdcdata(manifest_df$id[1:2],progress=FALSE,access_method = "api", use_cached = FALSE)
+fnames = gdcdata(manifest_df$id,progress=FALSE,access_method = "api", use_cached = FALSE)
 
 head(fnames)
 ```
 
 
+
+
+
 #Reorganize the Downloaded Files and Check the MD5 Sums
 
+```{r}
+source("Cat_Expn_Data.r")
+```
+
+NOTE: here i had to use some bash reprocessing 
+1. mv all counts files to a directory called Expn_Data/ (remove the nested directories)
+2. gunzip *.gz (some were gzipped, some not... )
+
+```{r}
+path="~/Documents/GitHub/RNAseq_Cancer_Biomarkers/Expn_Data/"
+
+files <- dir(path=path, pattern="*.counts", recursive = TRUE) %>%
+  paste0(path, .)
+
+head(files)
+```
+
+```{r}
+cated <- catExpnData(filenames = files, 
+                     regex="^.+\\/([a-z0-9].+.htseq.counts)", 
+                     cols=c(1,2), header = FALSE)
+```
+
+```{r}
+head(cated$`2`)
+dim(cated$`2`)
+
+ all(lapply(cated$`1`, function(x) identical(x, cated$`1`[,1]))) #check order is identical for all genes columns 
+```
+
+```{r}
+counts <- cated$`2` %>%
+  as.data.frame() %>% 
+  mutate(Genes=cated$`1`[,1]) %>% #genes in same order in all datasets. 
+  dplyr::select(Genes, everything())
+
+head(counts[,1:10])
+
+# write.csv(counts, "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE)
+```
 
 
 Using a little bash here. 
-
-```{r}
-system("ls -d")
-system("pwd")
-```
-
-```{r}
-system("find $PWD -type f -name '*.htseq.*' -exec mv {} . \;")
-```
 
 ```{r}
 #check MD5 sums
@@ -295,6 +334,7 @@ system("find $PWD -type f -name '*.htseq.*' -exec mv {} . \;")
 #Download Clinical Data 
 
 https://seandavi.github.io/2018/03/extracting-clinical-information-using-the-genomicdatacommons-package/
+
 
 ##from GDC Database
 
@@ -367,6 +407,8 @@ Need to organize and move the Clinical Data so it is more easily usable.
 system("ls -1")
 system("pwd")
 
+
+#didn't work--- need to figure out how . Works in terminal directly
 system("find . -type f -name '*.xlsx' -exec mv {} . \;")
 
 #note this below works since there were NOT other directories except the file UUID dirs.
