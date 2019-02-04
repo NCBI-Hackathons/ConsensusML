@@ -353,6 +353,7 @@ gdc_set_cache(directory = "~/Documents/GitHub/RNAseq_Cancer_Biomarkers")
 
 clinFile <- gdcdata(uuids = manifest.clin$id)
 clinFile
+
 ```
 
 
