@@ -11,7 +11,7 @@ output: html_document
 ```{r setup}
 library(knitr)
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE, fig.align='center', fig.height=5, fig.width=8, dpi = 600)
-knitr::opts_knit$set(root.dir = '/fh/scratch/delete90/meshinchi_s/Hackathon_2019/')
+knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
 options(stringsAsFactors = FALSE)
 ```
 
@@ -131,8 +131,7 @@ res = files() %>%
 # res$type
 # res$data_type
 # res$data_format
-res$cases.project.project_id$key %>%
-  grep("TARGET", ., value=TRUE)
+res$cases.project.project_id$key  %>% .[order(.)]
 ```
 
 ```{r}
@@ -141,6 +140,7 @@ res.projects <- projects() %>%
   aggregations() 
 
 # str(res.projects)
+res.projects
 ```
 
 ```{r}
@@ -178,26 +178,12 @@ qfiles <- files(fields=c("cases.project.project_id",default_fields('files'), gre
                          "analysis.analysis_type", "analysis.workflow_type", "analysis.workflow_version")) %>% 
   filter(~ type == 'gene_expression' & 
            analysis.workflow_type == 'HTSeq - Counts' &
-          (cases.project.project_id == "TARGET-AML" | cases.project.project_id == "TARGET-NBL" | cases.project.project_id == "TARGET-WT")) 
+          (cases.project.project_id == "TARGET-AML" | cases.project.project_id == "TARGET-NBL" | cases.project.project_id == "TARGET-WT" | cases.project.project_id == "TARGET-CCSK" | cases.project.project_id == "TARGET-OS" | cases.project.project_id == "TARGET-RT")) 
 
 
 qfiles %>% count() #473
 # head(qfiles)
 ```
-
-```{r}
-qfiles <- files(fields=available_fields('files')) %>% 
-  filter(~ type == 'gene_expression' & 
-           # grepl("TARGET", cases.project.project_id ) & #doesn't work
-           cases.project.project_id == "TARGET-AML" &
-           analysis.workflow_type == 'HTSeq - Counts')
-
-
-qfiles %>% count() #187 (?)
-# str(qfiles)
-# qfiles$fields
-```
-
 
 #Create ID Map for Manifest, Clinical, and Expression Files
 
@@ -235,6 +221,9 @@ ID.map <- res.expn[ !grepl("list|data.frame", sapply(res.expn, class)) ] %>%
 
 head(ID.map)
 dim(ID.map) # 469  20
+
+getwd()
+# write.csv(ID.map, "GCD_TARGET_Data_AML_NBL_WT")
 ```
 
 ```{r}
@@ -263,13 +252,13 @@ dim(manifest_df) #469
 
 ```{r}
 #Add the GDC Client to your R options
-options(gdc_client="/home/jlsmith3/scripts/opt/bin/gdc-client")
-gdc_client()
+# options(gdc_client="/home/jlsmith3/scripts/opt/bin/gdc-client")
+# gdc_client()
 ```
 
 ```{r}
 #Set your destination directory
-gdc_set_cache(directory = "/fh/scratch/delete90/meshinchi_s/Hackathon_2019")
+gdc_set_cache(directory = "/Volumes/meshinchi_s/Hackathon_2019/")
 ```
 
 ```{r}
@@ -343,9 +332,14 @@ dim(full_clin) # 988  33
 ```{r}
 qClin <- files() %>%
     filter(~ type == 'clinical_supplement' &
-             cases.project.project_id == "TARGET-AML") 
+             (cases.project.project_id == "TARGET-AML"| 
+             cases.project.project_id == "TARGET-NBL" | 
+             cases.project.project_id == "TARGET-WT" |
+           cases.project.project_id == "TARGET-CCSK" | 
+           cases.project.project_id == "TARGET-OS" |
+           cases.project.project_id == "TARGET-RT")) 
 
-str(qClin)
+# str(qClin)
 qClin %>% count()
 ```
 
@@ -355,7 +349,8 @@ head(manifest.clin)
 ```
 
 ```{r}
-gdc_cache()
+gdc_set_cache(directory = "~/Documents/GitHub/RNAseq_Cancer_Biomarkers")
+
 clinFile <- gdcdata(uuids = manifest.clin$id)
 clinFile
 ```
