@@ -305,10 +305,8 @@ cated <- catExpnData(filenames = files,
 ```
 
 ```{r}
-head(cated$`2`)
-dim(cated$`2`)
-
- all(lapply(cated$`1`, function(x) identical(x, cated$`1`[,1]))) #check order is identical for all genes columns 
+lapply(cated, dim)
+all(lapply(cated$`1`, function(x) identical(x, cated$`1`[,1]))) #check order is identical for all genes columns 
 ```
 
 ```{r}
