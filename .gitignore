@@ -1,2 +1,3 @@
 id_rsa.txt
 scripts/.ipynb_checkpoints/
+scripts/__pycache__/
