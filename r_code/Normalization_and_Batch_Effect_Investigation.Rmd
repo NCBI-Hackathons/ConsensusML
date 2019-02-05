@@ -1,0 +1,87 @@
+---
+title: 'Normalize Counts and Merge in '
+author: "Jenny Smith"
+date: "February 4, 2018"
+output: html_document
+---
+
+
+#Set-up 
+
+```{r setup}
+library(knitr)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE, fig.align='center', fig.height=5, fig.width=8, dpi = 600)
+knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
+options(stringsAsFactors = FALSE)
+```
+
+
+```{r message = FALSE, warning=FALSE}
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(tibble)
+library(tidyr)
+getwd()
+```
+
+
+#Read in Counts 
+
+```{r}
+counts <- read.csv("TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
+
+head(counts[,1:5])
+dim(counts)
+```
+
+
+
+#TMM Normalization 
+
+```{r}
+library(limma)
+library(edgeR)
+```
+
+```{r}
+dge <- DGEList(counts = counts)
+```
+
+```{r}
+samp <- ncol(counts)
+
+keep.dge <- rowSums(cpm(dge) >= 1) >= max(2,(0.05*samp)) #5% of AML samples has cpm of at least 1 for a gene
+dge <- dge[keep.dge,] #subset for those genes with cmp >= 1 per gene in AML samples
+dge <- calcNormFactors(dge) #Do TMM normalization
+```
+
+```{r}
+dim(dge) #21,407 genes meet these criteria by 474 
+
+cpm <- cpm(dge,log = TRUE, prior.count = 1)
+
+head(cpm[,1:5])
+# write.csv(cpm, "TARGET_NBL_AML_WT_RT_TMMCPM_log2_Norm_Counts.csv", row.names = TRUE)
+```
+
+
+#Use the Merged Clinical and TMMCPM 
+
+This was created by David Lee Using Python()
+See D-V-DLee for Github 
+
+
+#Examine boxplots of the 
+
+```{r}
+
+```
+
+
+
+
+
+
+
