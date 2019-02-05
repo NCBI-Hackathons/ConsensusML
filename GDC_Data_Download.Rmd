@@ -349,7 +349,7 @@ head(counts)
 
 
 ```{r}
-write.csv(counts, "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE) 
+# write.csv(counts, "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE) 
 ```
 
 
