@@ -1,6 +1,3 @@
-https://docs.google.com/document/d/1DPAmUFfggAnAjsMIPTs1hV90k25ZKckYLi18b3dBot0/edit#
-
-https://docs.google.com/presentation/d/1HxHyaGLNxAbhsEd2OVs6R3HiGGu5hrJO_lcLS5ffZlc/edit#slide=id.g4f487fb995_0_278
 # RNAseq_Cancer_Biomarkers
 Machine Learning to Detect Cancer Biomarkers from RNAseq Data
 
@@ -14,3 +11,8 @@ Leukemia is a cancer of the blood arising in white blood cells of the bone marro
 We were interested in applying machine learning principles for feature selection, to identify the most important genes and gene sets for predicting clinically-relevant classifiers in pediatric and adult AML cases. We initially analyzed the TARGET pediatric AML cohort. We combined primary peripheral blood and bone marrow samples, and assessed potential sources of bias and batch effects. Classifiers of main interest included age, stage, and survival. We further pre-filtered TMM-normalized expression based on extent of differential expression between these classifiers of interest, using multiple thresholds.
 
 We then applied a series of machine learning algorithms for feature selection using various R and Python packages: 1. Support Vector Machines (SVM) using [e1071](https://cran.r-project.org/web/packages/e1071/index.html); 2. Random Forest with boosting in Python; 3. Neural Networks with [keras](https://cran.r-project.org/web/packages/keras/index.html); 4. Logistic regression in R; 5. Elastic net with Lasso using [glmnet](https://cran.r-project.org/web/packages/glmnet/index.html); 6. [AutoML](https://pypi.org/project/automl/). 
+
+# Links to Shared Documents
+
+## 1. Manuscript
+https://docs.google.com/document/d/1DPAmUFfggAnAjsMIPTs1hV90k25ZKckYLi18b3dBot0/edit#
