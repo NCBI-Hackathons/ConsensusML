@@ -30,7 +30,7 @@ getwd()
 #Read in Counts 
 
 ```{r}
-counts <- read.csv("TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
+counts <- read.csv("Expn_Data/TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
 
 head(counts[,1:5])
 dim(counts)
@@ -71,6 +71,7 @@ head(cpm[,1:5])
 
 This was created by David Lee Using Python()
 See D-V-DLee for Github 
+
 
 
 #Examine boxplots of the 

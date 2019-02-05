@@ -5,7 +5,7 @@ date: "February 2, 2018"
 output: html_document
 ---
 
-
+   
 #Set-up 
 
 ```{r setup}
@@ -34,6 +34,10 @@ http://bioconductor.org/packages/release/bioc/vignettes/TCGAutils/inst/doc/TCGAu
 
 http://bioconductor.org/packages/release/bioc/vignettes/TCGAbiolinks/inst/doc/index.html
 http://bioconductor.org/packages/release/bioc/vignettes/TCGAbiolinks/inst/doc/query.html#get_manifest_file
+
+
+TCGA/TARGET Legacy Barcodes
+https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/ 
 
 
 #Installation  
@@ -94,6 +98,7 @@ class(presults)
 str(presults)
 ids(presults) #10 datasets returned by default when no arguments given to projects and no filters added
 ```
+
 
 
 ##Files 
@@ -187,6 +192,17 @@ qfiles %>% count() #473
 
 NOTE: OS and CCSK have no mRNAseq. TARGET-RT has only 5 patient samples with RNAseq on GDC
 
+```{r}
+qfiles <- files(fields=c("cases.project.project_id",default_fields('files'), grep_fields('files', "associated_entities"), 
+                         "analysis.analysis_type", "analysis.workflow_type", "analysis.workflow_version")) %>% 
+  filter(~ type == 'gene_expression' & 
+           analysis.workflow_type == 'HTSeq - Counts' &
+          (cases.project.project_id == "TARGET-AML" | cases.project.project_id == "TARGET-NBL" | cases.project.project_id == "TARGET-WT" | cases.project.project_id == "TARGET-CCSK" | cases.project.project_id == "TARGET-OS" | cases.project.project_id == "TARGET-RT")) 
+
+
+```
+
+
 
 #Create ID Map for Manifest, Clinical, and Expression Files
 
@@ -248,7 +264,7 @@ head(manifest_df)
 dim(manifest_df) #469 
 
 
-# write.table(manifest_df, "TARGET_Manifest_RNAseq_Counts.txt", row.names = FALSE, sep="\t", quote=FALSE)
+# write.table(manifest_df, "Manifest/TARGET_Manifest_RNAseq_Counts.txt", row.names = FALSE, sep="\t", quote=FALSE)
 ```
  
  
@@ -256,9 +272,9 @@ dim(manifest_df) #469
 #Download the files 
 
 ```{r}
-#Add the GDC Client to your R options
-# options(gdc_client="/home/jlsmith3/scripts/opt/bin/gdc-client")
-# gdc_client()
+#Add the GDC Client to your R options if youre using this. 
+options(gdc_client="/home/jlsmith3/scripts/opt/bin/gdc-client")
+gdc_client()
 ```
 
 ```{r}
@@ -268,7 +284,7 @@ gdc_set_cache(directory = "Expn_Data/")
 ```
 
 ```{r}
-#download step
+#download step (GDC Client only recommended for large downloads,like BAM, FQs )
 fnames = gdcdata(manifest_df$id,progress=FALSE,access_method = "api", use_cached = FALSE)
 
 head(fnames)
@@ -276,6 +292,8 @@ head(fnames)
 
 
 #Check MD5 Sums
+
+needs to be done... 
 
 ```{r}
 #check MD5 sums
@@ -289,9 +307,16 @@ head(fnames)
 source("Cat_Expn_Data.r")
 ```
 
-NOTE: here i had to use some bash reprocessing 
+NOTE: here I had to use some bash reprocessing:
+
 1. mv all counts files to a directory called Expn_Data/ (remove the nested directories)
+
+`find Expn_Data/ -type f -name '*counts*' -exec mv {} . \;`
+
 2. gunzip *.gz (some were gzipped, some not... )
+
+`gunzip *.gz`
+
 
 ```{r}
 path="~/Documents/GitHub/RNAseq_Cancer_Biomarkers/Expn_Data/"
@@ -346,9 +371,8 @@ head(counts[,1:10])
 
 
 ```{r}
-# write.csv(counts, "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE)
+# write.csv(counts, "Expn_Data/TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE)
 ```
-
 
 
 
@@ -361,7 +385,9 @@ https://seandavi.github.io/2018/03/extracting-clinical-information-using-the-gen
 ##from GDC Database
 
 ```{r}
-cases() %>% filter(~ project.project_id == "TARGET-AML") %>% count() #988 patients
+cases() %>%
+  filter(~ project.project_id == "TARGET-AML") %>% 
+  count() #988 patients
 
 case_ids <- cases() %>%
   filter(~ project.project_id == "TARGET-AML") %>%
