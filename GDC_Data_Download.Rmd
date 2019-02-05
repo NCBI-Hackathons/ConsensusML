@@ -284,7 +284,7 @@ head(fnames)
 
 
 
-#Reorganize the Downloaded Files and Check the MD5 Sums
+#Reorganize and Concatenate the Downloaded Files 
 
 ```{r}
 source("Cat_Expn_Data.r")
@@ -325,8 +325,6 @@ head(counts[,1:10])
 
 ```
 
-
-
 ```{r}
 ID.map.sub <- dplyr::select(ID.map, file_name, entity_submitter_id) %>% 
   mutate_at(vars(file_name, entity_submitter_id), funs(gsub("-","\\.", .)))%>%
@@ -344,12 +342,12 @@ dim(fixNames.df)
 #Finally, update the column names
 colnames(counts)[-1] <- fixNames.df$entity_submitter_id
 
-head(counts)
+head(counts[,1:10])
 ```
 
 
 ```{r}
-write.csv(counts, "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE) 
+# write.csv(counts, "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE)
 ```
 
 
