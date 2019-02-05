@@ -376,9 +376,7 @@ qClin <- files() %>%
     filter(~ type == 'clinical_supplement' &
              (cases.project.project_id == "TARGET-AML"| 
              cases.project.project_id == "TARGET-NBL" | 
-             cases.project.project_id == "TARGET-WT" |
-           cases.project.project_id == "TARGET-CCSK" | 
-           cases.project.project_id == "TARGET-OS" |
+             cases.project.project_id == "TARGET-WT"  |
            cases.project.project_id == "TARGET-RT")) 
 
 # str(qClin)
