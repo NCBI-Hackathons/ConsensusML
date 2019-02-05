@@ -1,0 +1,144 @@
+---
+title: 'Normalize Counts and Merge in '
+author: "Jenny Smith"
+date: "February 4, 2018"
+output: html_document
+---
+
+
+#Set-up 
+
+```{r setup}
+library(knitr)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE, fig.align='center', fig.height=5, fig.width=8, dpi = 600)
+knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
+options(stringsAsFactors = FALSE)
+```
+
+
+```{r message = FALSE, warning=FALSE}
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(tibble)
+library(tidyr)
+getwd()
+```
+
+
+#Read in Counts 
+
+```{r}
+counts <- read.csv("TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
+
+head(counts[,1:5])
+dim(counts)
+```
+
+
+#Use the Merged Clinical and TMMCPM 
+
+This was created by David Lee Using Python()
+See D-V-DLee for Github 
+
+```{r}
+AML.CDE <- read.csv("scripts/AML_assay_clinical.csv", row.names = 1) %>%
+  set_rownames(.$TARGET.USI)
+
+dim(AML.CDE)
+head(AML.CDE[,1:5])
+```
+
+```{r}
+table(AML.CDE$Diagnostic.ID)
+```
+
+```{r}
+NBL.CDE <- read.csv("scripts/NBL_assay_clinical.csv", row.names = 1)
+
+dim(NBL.CDE)
+head(NBL.CDE[,1:5])
+```
+
+```{r}
+table(NBL.CDE$Diagnostic.ID)
+```
+
+```{r}
+WT.CDE <- read.csv("scripts/WT_assay_clinical.csv", row.names = 1)
+
+dim(WT.CDE)
+head(WT.CDE[,1:5])
+```
+
+```{r}
+table(WT.CDE$Diagnostic.ID)
+```
+
+Remove Non-diagnostic samples: 04A, 40A, 02A, 06A, 11A
+
+
+#Examine and Clean Clinical Data Elements
+
+```{r}
+cols.AML <- colnames(AML.CDE) %>% grep("^ENSG", ., invert=T, value=T)
+
+# cols.AML
+
+sapply(AML.CDE[,c(21:35,45:47)], table)
+```
+
+```{r}
+AML.CDE <- AML.CDE %>%
+  mutate_at(vars(c(45:47)), funs(gsub("NO", "No", .)))
+```
+
+
+
+
+#Differential Expression Analysis
+
+
+```{r}
+source("r_code/Limma_Voom_DE_Function.R")
+```
+
+```{r}
+#remove any patient samples that are not diagnositic
+Keep <- colnames(counts) %>% grep("04A|40A|02A|06A|11A", ., invert=TRUE, value=TRUE) 
+
+#remove end of the barcodes to match Clinical Data Rows 
+newColnames <- Keep %>%  gsub("\\.0[0-9]A.+","" ,.) 
+
+#Subset the raw counts for diagnostic samples and rename columns
+counts.sub <- counts[,Keep]
+colnames(counts.sub) <- newColnames
+
+head(counts.sub[,1:5])
+dim(counts.sub) #60,488 by 407 samples
+```
+
+
+```{r}
+pheno <- AML.CDE$WT1.mutation %>%
+  set_names(gsub("-",".",AML.CDE$TARGET.USI)) %>% 
+  .[.!="Unknown"]
+
+head(pheno)
+length(pheno)
+table(pheno)
+```
+
+
+```{r}
+DE.WT1 <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno)
+```
+
+
+
+
+
+
+
+
