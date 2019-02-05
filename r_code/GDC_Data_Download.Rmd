@@ -262,11 +262,10 @@ dim(manifest_df) #469
 ```
 
 ```{r}
-#Set your destination directory
+#Set your destination directory (be aware this downloads your current working directory, unless set otherwise)
+dir.create("Expn_Data")
 gdc_set_cache(directory = "Expn_Data/")
-
 ```
-
 
 ```{r}
 #download step

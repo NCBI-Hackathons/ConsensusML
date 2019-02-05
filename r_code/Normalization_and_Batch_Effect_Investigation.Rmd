@@ -37,29 +37,6 @@ dim(counts)
 ```
 
 
-#Read in the Clinical Annotations
-
-```{r}
-AML.CDE <- read.csv("AML_dataframe.csv", row.names = 1)
-
-head(AML.CDE[,1:5])
-dim(AML.CDE)
-```
-
-
-```{r}
-NBL.CDE <- read.csv("NBL_dataframe.csv", row.names = 1)
-
-head(NBL.CDE[, 1:5])
-dim(NBL.CDE)
-```
-
-```{r}
-
-```
-
-
-
 
 #TMM Normalization 
 
@@ -86,8 +63,14 @@ dim(dge) #21,407 genes meet these criteria by 474
 cpm <- cpm(dge,log = TRUE, prior.count = 1)
 
 head(cpm[,1:5])
-write.csv(cpm, "TARGET_NBL_AML_WT_RT_TMMCPM_log2_Norm_Counts.csv", row.names = TRUE)
+# write.csv(cpm, "TARGET_NBL_AML_WT_RT_TMMCPM_log2_Norm_Counts.csv", row.names = TRUE)
 ```
+
+
+#Use the Merged Clinical and TMMCPM 
+
+This was created by David Lee Using Python()
+See D-V-DLee for Github 
 
 
 #Examine boxplots of the 
@@ -95,6 +78,10 @@ write.csv(cpm, "TARGET_NBL_AML_WT_RT_TMMCPM_log2_Norm_Counts.csv", row.names = T
 ```{r}
 
 ```
+
+
+
+
 
 
 
