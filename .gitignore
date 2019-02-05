@@ -6,3 +6,7 @@ TARGET_NBL_AML_RT_WT_TMMCPM_log2_Norm_Counts.csv
 NBL_assay_clinical.csv
 WT_assay_clinical.csv
 AML_assay_clinical.csv
+
+scripts/AML_assay_clinical.csv
+scripts/NBL_assay_clinical.csv
+scripts/WT_assay_clinical.csv
