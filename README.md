@@ -16,3 +16,6 @@ We then applied a series of machine learning algorithms for feature selection us
 
 ## 1. Manuscript
 https://docs.google.com/document/d/1DPAmUFfggAnAjsMIPTs1hV90k25ZKckYLi18b3dBot0/edit#
+
+## 2. Day 2 Presentation
+https://docs.google.com/presentation/d/1HxHyaGLNxAbhsEd2OVs6R3HiGGu5hrJO_lcLS5ffZlc/edit#slide=id.g4f487fb995_0_278
