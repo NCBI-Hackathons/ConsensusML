@@ -37,48 +37,10 @@ dim(counts)
 ```
 
 
-
-#TMM Normalization 
-
-```{r}
-library(limma)
-library(edgeR)
-```
-
-```{r}
-dge <- DGEList(counts = counts)
-```
-
-```{r}
-samp <- ncol(counts)
-
-keep.dge <- rowSums(cpm(dge) >= 1) >= max(2,(0.05*samp)) #5% of AML samples has cpm of at least 1 for a gene
-dge <- dge[keep.dge,] #subset for those genes with cmp >= 1 per gene in AML samples
-dge <- calcNormFactors(dge) #Do TMM normalization
-```
-
-```{r}
-dim(dge) #21,407 genes meet these criteria by 474 
-
-cpm <- cpm(dge,log = TRUE, prior.count = 1)
-
-head(cpm[,1:5])
-# write.csv(cpm, "TARGET_NBL_AML_WT_RT_TMMCPM_log2_Norm_Counts.csv", row.names = TRUE)
-```
- 
-```{r}
-cpm <- read.csv("Expn_Data/TARGET_NBL_AML_RT_WT_TMMCPM_log2_Norm_Counts.csv", row.names = 1)
-
-head(cpm[,1:5])
-dim(cpm)
-```
-
-
 #Use the Merged Clinical and TMMCPM 
 
 This was created by David Lee Using Python()
 See D-V-DLee for Github 
-
 
 ```{r}
 AML.CDE <- read.csv("scripts/AML_assay_clinical.csv", row.names = 1) %>%
@@ -87,7 +49,6 @@ AML.CDE <- read.csv("scripts/AML_assay_clinical.csv", row.names = 1) %>%
 dim(AML.CDE)
 head(AML.CDE[,1:5])
 ```
-
 
 ```{r}
 table(AML.CDE$Diagnostic.ID)
@@ -104,14 +65,12 @@ head(NBL.CDE[,1:5])
 table(NBL.CDE$Diagnostic.ID)
 ```
 
-
 ```{r}
 WT.CDE <- read.csv("scripts/WT_assay_clinical.csv", row.names = 1)
 
 dim(WT.CDE)
 head(WT.CDE[,1:5])
 ```
-
 
 ```{r}
 table(WT.CDE$Diagnostic.ID)
@@ -120,36 +79,65 @@ table(WT.CDE$Diagnostic.ID)
 Remove Non-diagnostic samples: 04A, 40A, 02A, 06A, 11A
 
 
-#Examine boxplots of the 
+#Examine and Clean Clinical Data Elements
 
 ```{r}
-cpm.m <- cpm %>% 
-  rownames_to_column("Gene") %>% 
-  gather(USI,Log2.CPM, -Gene) %>%
-  mutate(Group=case_when(
-    grepl("TARGET.30.", USI) ~ "NBL",
-    grepl("TARGET.20.", USI) ~ "AML",
-    grepl("TARGET.50.", USI) ~ "WT"))
+cols.AML <- colnames(AML.CDE) %>% grep("^ENSG", ., invert=T, value=T)
 
-head(cpm.m)
+# cols.AML
+
+sapply(AML.CDE[,c(21:35,45:47)], table)
 ```
 
 ```{r}
-table(cpm.m$Group)
+AML.CDE <- AML.CDE %>%
+  mutate_at(vars(c(45:47)), funs(gsub("NO", "No", .)))
 ```
 
 
-```{r fig.width=18, fig.height=6}
-ggplot(cpm.m[cpm.m$Group != "WT",], 
-       aes(x = reorder(USI, Log2.CPM, FUN = median), y = Log2.CPM, fill=Group)) +
-  geom_boxplot()
-```
 
+
+#Differential Expression Analysis
 
 
 ```{r}
-sessionInfo()
+source("r_code/Limma_Voom_DE_Function.R")
 ```
+
+```{r}
+#remove any patient samples that are not diagnositic
+Keep <- colnames(counts) %>% grep("04A|40A|02A|06A|11A", ., invert=TRUE, value=TRUE) 
+
+#remove end of the barcodes to match Clinical Data Rows 
+newColnames <- Keep %>%  gsub("\\.0[0-9]A.+","" ,.) 
+
+#Subset the raw counts for diagnostic samples and rename columns
+counts.sub <- counts[,Keep]
+colnames(counts.sub) <- newColnames
+
+head(counts.sub[,1:5])
+dim(counts.sub) #60,488 by 407 samples
+```
+
+
+```{r}
+pheno <- AML.CDE$WT1.mutation %>%
+  set_names(gsub("-",".",AML.CDE$TARGET.USI)) %>% 
+  .[.!="Unknown"]
+
+head(pheno)
+length(pheno)
+table(pheno)
+```
+
+
+```{r}
+DE.WT1 <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno)
+```
+
+
+
+
 
 
 
