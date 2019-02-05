@@ -383,10 +383,12 @@ qClin <- files() %>%
 qClin %>% count()
 ```
 
+
 ```{r}
 manifest.clin <- manifest(qClin)
 head(manifest.clin)
 ```
+
 
 ```{r}
 gdc_set_cache(directory = "~/Documents/GitHub/RNAseq_Cancer_Biomarkers")
