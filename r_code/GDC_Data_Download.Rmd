@@ -179,28 +179,21 @@ grep('cases.samples.submitter_id',available_fields('files'), value=TRUE)
 #Note: Here I need the sample UUID because it will map file ID to TARGET Barcode later, and is not included in the default fields. 
 #so I used some selected fields, such as project ID, associated_entities (Sample UUIDs),and workflow type, in addition to  the default.
 
-qfiles <- files(fields=c("cases.project.project_id",default_fields('files'), grep_fields('files', "associated_entities"), 
-                         "analysis.analysis_type", "analysis.workflow_type", "analysis.workflow_version")) %>% 
+# fields=c("cases.project.project_id",default_fields('files'), grep_fields('files', "associated_entities"), 
+#                          "analysis.analysis_type", "analysis.workflow_type", "analysis.workflow_version")
+
+qfiles <- files(fields=available_fields('files')) %>% 
   filter(~ type == 'gene_expression' & 
            analysis.workflow_type == 'HTSeq - Counts' &
-          (cases.project.project_id == "TARGET-AML" | cases.project.project_id == "TARGET-NBL" | cases.project.project_id == "TARGET-WT" | cases.project.project_id == "TARGET-CCSK" | cases.project.project_id == "TARGET-OS" | cases.project.project_id == "TARGET-RT")) 
+          (cases.project.project_id == "TARGET-AML" | cases.project.project_id == "TARGET-NBL" | cases.project.project_id == "TARGET-WT" | cases.project.project_id == "TARGET-RT")) 
 
 
-qfiles %>% count() #473
+qfiles %>% count() #478
 # head(qfiles)
 ```
 
 NOTE: OS and CCSK have no mRNAseq. TARGET-RT has only 5 patient samples with RNAseq on GDC
 
-```{r}
-qfiles <- files(fields=c("cases.project.project_id",default_fields('files'), grep_fields('files', "associated_entities"), 
-                         "analysis.analysis_type", "analysis.workflow_type", "analysis.workflow_version")) %>% 
-  filter(~ type == 'gene_expression' & 
-           analysis.workflow_type == 'HTSeq - Counts' &
-          (cases.project.project_id == "TARGET-AML" | cases.project.project_id == "TARGET-NBL" | cases.project.project_id == "TARGET-WT" | cases.project.project_id == "TARGET-CCSK" | cases.project.project_id == "TARGET-OS" | cases.project.project_id == "TARGET-RT")) 
-
-
-```
 
 
 
@@ -216,7 +209,17 @@ names(res.expn)
 # lapply(res.expn,head)
 ```
 
+```{r}
+input <- analysis$input_files %>%
+  bind_rows()
+
+colnames(input)
+head(input)
+```
+
+
 The "cases" feilds - if used in `results()` contains much of the clinical data elements that are extracted through `gdc_clinical()` function used below. 
+
 
 ```{r}
 #there are 2 Sample IDs associated with a single file. 

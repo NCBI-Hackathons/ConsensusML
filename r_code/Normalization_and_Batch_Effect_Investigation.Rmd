@@ -70,7 +70,10 @@ head(cpm[,1:5])
 #Use the Merged Clinical and TMMCPM 
 
 This was created by David Lee Using Python()
-See D-V-DLee for Github 
+
+```{r}
+AML <- read.csv("")
+```
 
 
 
@@ -82,7 +85,106 @@ See D-V-DLee for Github
 
 
 
+#PCA with Clinical Covariates 
+
+```{r}
+pca_custom <- function(expnData,CDE,fillCol, colorCol, colorCode=NULL, PC3=FALSE,
+                       single.col.outline=FALSE, toHighlight=NULL, ellipse=FALSE){
+  library(tibble)
+  library(dplyr)
+  #expn data is log2, normalized counts
+  #CDE has patients as rownames. 
+  #fillCol == character string of column name for fill colors 
+  #colorCol == character string of column name for border colors
+  #colorCode is an option named vector of colors. If specifying color and fill manually, create a list with  length 2, with names c("fill","color")
+  #single.col.outline is T/F for wether to susbet to datframe for the border colors. 
+  #toHighlight is a character vector for if single.col.outline == TRUE. Gives the factor to highlight with borders from the colorColumn. 
+  expnData <- expnData[,intersect(rownames(CDE),colnames(expnData))]
+  
+  # print(dim(expnData))
+  pca <- prcomp(t(expnData), scale=TRUE)
+  summ <- summary(pca)
+  
+  scores <- as.data.frame(pca$x) %>%
+    rownames_to_column("USI") %>%
+    inner_join(., dplyr::select(CDE,USI=matches("USI$"), everything()), by="USI") %>%
+    dplyr::select(USI,fillCol, colorCol, everything())
+  
+  #Plot function for  PC1 and either PC2 or anyother
+  pca.plot_function <- function(scores,PC){
+   
+    idx <- as.numeric(gsub("[A-Za-z]{2}","", PC))
+    
+    
+    pca.plot  <- ggplot(scores, aes_string(x="PC1", y=PC)) +
+      labs(x=paste("PC1: ", round(summ$importance[2,1], digits=3)*100, "% variance"),
+           y=paste(paste0(PC,": "), round(summ$importance[2,idx], digits=3)*100, "% variance")) +
+      theme_numX  +
+      theme(legend.text = element_text(size=14),
+            legend.title = element_text(size=16))
+    
+    if(single.col.outline){
+      pca.plot <- pca.plot + 
+        geom_point(size=5,stroke=0.2, alpha=1,shape=21,color="white",
+                   aes_string(fill=fillCol)) +
+        geom_point(data=subset(scores, scores[,colorCol] == toHighlight),
+                   aes_string(x="PC1", y=PC, color=colorCol),
+                   size=4, stroke=1, alpha=1,shape=21)
+      
+    }else{
+      pca.plot <- pca.plot + 
+        geom_point(size=5, stroke=2, alpha=0.85,shape=21,
+                   aes_string(fill=fillCol, color=colorCol))
+    }
+      
+    if(!is.null(colorCode)){
+        
+        if(is.list(colorCode)){
+          pca.plot <- pca.plot + 
+            scale_fill_manual(values=colorCode[["fill"]]) + 
+            scale_color_manual(values=colorCode[["color"]])
+        }else{
+          pca.plot <- pca.plot + 
+            scale_fill_manual(values=colorCode)  
+        }
+    }
+      
+    if(ellipse){
+        pca.plot <- pca.plot +
+          stat_ellipse(data=scores, type="norm",
+                       aes_string(x="PC1", y=PC, fill=fillCol),
+                       geom="polygon", alpha=0.1)
+    }
+      
+    return(pca.plot)
+  }
+  
+  #PC1 and PC2 plot
+  pc1.pc2 <- pca.plot_function(scores=scores,PC="PC2")
+  
+  #PC1 and PC3 plot
+  if(PC3){
+    pc1.pc3 <- pca.plot_function(scores=scores, PC="PC3") 
+        
+  }
+  
+
+  res <- list("pca"=pca,"scores"=scores,"plot.1"=pc1.pc2)
+  
+  if(PC3){
+    res[["plot.2"]] <- pc1.pc3
+  }
+  
+  return(res)
+  
+}
+
+```
 
 
 
+
+```{r}
+
+```
 
