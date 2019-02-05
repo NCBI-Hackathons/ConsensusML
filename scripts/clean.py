@@ -1,14 +1,16 @@
 def manifest_clinical_merge(manifest_df, clinical_df, target):
     """
-    inputs:
-    manifest_df - dataframe with all study metadata
-    clinical_df - dataframe specific for disease
-    target - string ex 'TARGET-WT'
+    AML_df = manifest_clinical_merge(manifest_df, aml_disc_df, 'TARGET-AML')
 
-    output:
-    returns combined dataframe by merging on TARGET USI (ex TARGET-50-CAAAAA)
+    Parameters
+    ----------------
+    manifest_df: dataframe of metadata of study
+    clinical_df: dataframe specific for disease with patient as rows
+    target: string of target of disease 
 
-    ex: WT_df = manifest_clinical_merge(manifest_df, wt_disc_df, 'TARGET-WT')
+    Returns
+    ----------------
+    dataframe transposed with patients as rows and genes as columns 
     """
     target_df = manifest_df[manifest_df['project.project_id'] == target]
     target_df['TARGET USI'] = target_df.loc[:, 'entity_submitter_id'].apply(lambda x: x[:16])
@@ -18,8 +20,15 @@ def manifest_clinical_merge(manifest_df, clinical_df, target):
 
 def assay_transpose(assay_df):
     """
-    input assay_df
-    transposes df so that rows are patient assays
+    assay_t_df = assay_transpose(assay_df)
+
+    Parameters
+    ----------------
+    assay_df: dataframe of assay data with genes as rows and patients as columns
+
+    Returns
+    ----------------
+    dataframe transposed with patients as rows and genes as columns 
     """
     assay_pt_df = assay_df.T
     assay_pt_df.columns = assay_pt_df.iloc[0]
@@ -41,8 +50,16 @@ def column_reorder(clinical_df):
 
 def assay_clinical_merge(assay_df, clinical_df):
     """
-    input assay df, clinical df, and disease (AML, WT, or NBL)
-    return merged data
+    AML_genes = assay_clinical_merge(assay_t_df, AML_df)
+
+    Parameters
+    ----------------
+    assay_df: dataframe of assay data with patients as rows and genes as columns
+    clinical_df: dataframe of clinical + manifest data with patients as rows
+    
+    Returns
+    ----------------
+    merged dataframe on 'entity_submitted_id' with 'Diagnostic ID' as second columns
     """
     clinical_df['entity_submitter_id'] = clinical_df['entity_submitter_id'].apply(lambda x: x.replace('-', '.'))
     # clinical_df['TARGET USI'] = clinical_df['TARGET USI'].apply(lambda x: x.replace('-', '.'))
