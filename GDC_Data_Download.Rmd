@@ -276,6 +276,11 @@ head(fnames)
 ```
 
 
+#Check MD5 Sums
+
+```{r}
+#check MD5 sums
+```
 
 
 
@@ -317,15 +322,37 @@ counts <- cated$`2` %>%
 
 head(counts[,1:10])
 
-# write.csv(counts, "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE)
+
 ```
 
 
-Using a little bash here. 
 
 ```{r}
-#check MD5 sums
+ID.map.sub <- dplyr::select(ID.map, file_name, entity_submitter_id) %>% 
+  mutate_at(vars(file_name, entity_submitter_id), funs(gsub("-","\\.", .)))%>%
+  mutate_at(vars(file_name), funs(gsub(".gz", "",. )))
+
+fixNames.df <- data.frame(names= colnames(counts)[-1] %>% gsub("^X", "",.))  %>%
+  left_join(.,ID.map.sub, by=c("names"="file_name"))
+
+
+head(fixNames.df)
+dim(fixNames.df)
 ```
+
+```{r}
+#Finally, update the column names
+colnames(counts)[-1] <- fixNames.df$entity_submitter_id
+
+head(counts)
+```
+
+
+```{r}
+write.csv(counts, "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv", row.names = FALSE) 
+```
+
+
 
 
 
