@@ -1,4 +1,4 @@
-AML RNA-seq Feature Selection and Biomarker Identification with Machine Learning [![DOI](https://zenodo.org/badge/169003170.svg)](https://zenodo.org/badge/latestdoi/169003170)
+ConsensusML [![DOI](https://zenodo.org/badge/169003170.svg)](https://zenodo.org/badge/latestdoi/169003170)
 ---
 
 # RNAseq_Cancer_Biomarkers
