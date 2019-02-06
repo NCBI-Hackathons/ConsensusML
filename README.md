@@ -24,6 +24,10 @@ TARGET gene counts were obtained from the Genomic Data Commons (https://gdc.canc
 ## Analysis Approach using Machine Learning Algorithms
 We then applied an "ensemble" learning approach comparing feature selection results. We assessed results using multiple machine learning algorithms from various R and Python packages, including: 1. Support Vector Machines (SVM) using [e1071](https://cran.r-project.org/web/packages/e1071/index.html); 2. Random Forest with boosting in Python; 3. Neural Networks with [keras](https://cran.r-project.org/web/packages/keras/index.html); 4. Logistic regression in R; 5. Elastic net with Lasso using [glmnet](https://cran.r-project.org/web/packages/glmnet/index.html); 6. [AutoML](https://pypi.org/project/automl/). 
 
+# Results and Feature Selection
+
+Using normalized and pre-filtered RNA-seq expression data, we fitted models using various algorithms as described in Methods. For models that performed well on the filtered gene set, we then identified the most important gene features for model prediction. We assessed consensus of selected features across algorithm classes, and for the most common recurrently selected features, we mined the scientific literature for evidence validating these genes' functional roles in leukemia and AML.
+
 # Links to Shared Documents
 
 ## 1. Manuscript
