@@ -11,58 +11,92 @@ library(useful)
 library(ggplot2)
 ```
 
+# Aim
+
+Identfiy relationships between categories of AML and genetic assay results
+
+# Background
+
+Acute Myeloid Leukemia is a cancer affecting blood stem cells. Onset is sudden and affected cells can outcompete normal cells, resulted in complications and death. AML has multiple variants. Unlike staging used in many cancers AML affected cells are typed as part of treatment. These types serve to identify phenotypes of expression of the disease. Treatment is similar to other cancerns, involving radiation and chemotherapy. Relapse affects 50% of cases.
 
 ```{r read_data}
 #reading a full data set of patients (these are later subsetted to patients with assays
-PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
-PatientAndPhenotypeOnly <- PatientList
-PatientAndPhenotypeOnly[,c("Gender","Race",
-                           "Ethnicity",
-                           "Age.at.Diagnosis.in.Days",
-                           "First.Event",
-                           
+{
+  PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
+  PatientAndPhenotypeOnly <- PatientList
+  
+  # removing non mutation phenotyping information from DF
+  PatientAndPhenotypeOnly[,c("Gender","Race",
+                             "Ethnicity",
+                             "Age.at.Diagnosis.in.Days",
+                             "First.Event",
+                             
+  
+                  "Event.Free.Survival.Time.in.Days",  
+                 "Vital.Status",
+                 "Overall.Survival.Time.in.Days",
+                 "Year.of.Diagnosis",
+                 "Year.of.Last.Follow.Up",
+                 "Protocol",
+                 "WBC.at.Diagnosis",
+                 "Bone.marrow.leukemic.blast.percentage....",
+                 "Peripheral.blasts....",
+                 "CNS.disease",
+                 "Chloroma",
+                 "FAB.Category",
+                 "Cytogenetic.Code.Other",
+                 "Cytogenetic.Complexity",
+                 "Primary.Cytogenetic.Code",
+                 "ISCN",
+                 "MRD.at.end.of.course.1",
+                 "MRD...at.end.of.course.1",
+                 "MRD.at.end.of.course.2",
+                 "MRD...at.end.of.course.2",
+                 "CR.status.at.end.of.course.1" ,
+                 "CR.status.at.end.of.course.2" ,
+                 "Risk.group",
+                 "SCT.in.1st.CR",
+                 "Bone.Marrow.Site.of.Relapse.Induction.Failure",
+                 "CNS.Site.of.Relapse.Induction.Failure" ,
+                 "Chloroma.Site.of.Relapse.Induction.Failure",
+                 "Cytogenetic.Site.of.Relapse.Induction.Failure",
+                 "Other.Site.of.Relapse.Induction.Failure",
+                 "Comment",
+                 "Refractory.Timepoint.sent.for.Induction.Failure.Project")] <- NULL
+  
+  PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Unknown" | PatientAndPhenotypeOnly == "N/A" | PatientAndPhenotypeOnly == "Not done"] <- 0
+  
+  PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "No" |PatientAndPhenotypeOnly == "NO" ] <- 0
+  PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Yes"| PatientAndPhenotypeOnly == "YES"] <- 1
+  
+  PatientAndPhenotypeOnly[-1] <- lapply(PatientAndPhenotypeOnly[-1], as.numeric)
 
-                "Event.Free.Survival.Time.in.Days",  
-               "Vital.Status",
-               "Overall.Survival.Time.in.Days",
-               "Year.of.Diagnosis",
-               "Year.of.Last.Follow.Up",
-               "Protocol",
-               "WBC.at.Diagnosis",
-               "Bone.marrow.leukemic.blast.percentage....",
-               "Peripheral.blasts....",
-               "CNS.disease",
-               "Chloroma",
-               "FAB.Category",
-               "Cytogenetic.Code.Other",
-               "Cytogenetic.Complexity",
-               "Primary.Cytogenetic.Code",
-               "ISCN",
-               "MRD.at.end.of.course.1",
-               "MRD...at.end.of.course.1",
-               "MRD.at.end.of.course.2",
-               "MRD...at.end.of.course.2",
-               "CR.status.at.end.of.course.1" ,
-               "CR.status.at.end.of.course.2" ,
-               "Risk.group",
-               "SCT.in.1st.CR",
-               "Bone.Marrow.Site.of.Relapse.Induction.Failure",
-               "CNS.Site.of.Relapse.Induction.Failure" ,
-               "Chloroma.Site.of.Relapse.Induction.Failure",
-               "Cytogenetic.Site.of.Relapse.Induction.Failure",
-               "Other.Site.of.Relapse.Induction.Failure",
-               "Comment",
-               "Refractory.Timepoint.sent.for.Induction.Failure.Project")] <- NULL
+}
 
-PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Unknown" | PatientAndPhenotypeOnly == "N/A" | PatientAndPhenotypeOnly == "Not done"] <- 0
-
-PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "No" |PatientAndPhenotypeOnly == "NO" ] <- 0
-PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Yes"| PatientAndPhenotypeOnly == "YES"] <- 1
-
-PatientAndPhenotypeOnly[-1] <- lapply(PatientAndPhenotypeOnly[-1], as.numeric)
-
+#reading compiled patient data
+{
+  CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv")
+  
+}
 ```
 
+# Data
+
+Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients.
+
+## Assumptions
+
+Where phenotyping information were not available, we assumed the observation to be "not there" instead of NA. This was to 
+
+# Analysis
+
+Our analysis took two phases, grouping of cellular classifications into phenotypes, and identification of differences in genetic assay results between phenotypes.
+
+## Identifying Phenotypes: K-means
+
+Data from all 993 patients were used to identify phenotypes. Patients had a variety of tests for cell mutation typing, including positive and negatives. However, all patients also had NA values across some tests. This aligns with clinical practice where a provider focuses on testing for certain types and, once an optimal course of treatment is identified, has no need to further specify the types of mutation. Because a step of clinical expertise was involved, we decided to identify all NA values has 0 (not found), under the assumption that, more likely than not, something not tested for was not expected by the expert. 
+
+Notably, rather than informing phenotypes through clinical or biological knowledge, we used the k-means unsupervised classification to group the available phenotype data. A synsitivity analysis of K= 20 to K=4 identified clustering of classes into groups of 4 across all values of K. Therefore the model of K = 4 was used to assign classes to the data.
 
 ```{r kmeans_clustering_analysis}
 KMeansReview <- PatientAndPhenotypeOnly
@@ -75,10 +109,11 @@ for(i in 20:4) {
 }
 
 ```
-Observing charts of nearness of clustering we see a tendancy for groups to be clustered into 4, even at high (k=20) values. We will identify patients as 1 of 4 clusters for phenotyping genetic traits.
 
 ```{r attaching_clusters_cleaned_data }
 GroupMatching <- KMeansReview[,c("TARGET.USI","4_k")]
+
+Clea
 
 
 ```
