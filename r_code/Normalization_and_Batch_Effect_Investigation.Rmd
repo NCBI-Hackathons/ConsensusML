@@ -65,6 +65,13 @@ cpm <- cpm(dge,log = TRUE, prior.count = 1)
 head(cpm[,1:5])
 # write.csv(cpm, "TARGET_NBL_AML_WT_RT_TMMCPM_log2_Norm_Counts.csv", row.names = TRUE)
 ```
+ 
+```{r}
+cpm <- read.csv("Expn_Data/TARGET_NBL_AML_RT_WT_TMMCPM_log2_Norm_Counts.csv", row.names = 1)
+
+head(cpm[,1:5])
+dim(cpm)
+```
 
 
 #Use the Merged Clinical and TMMCPM 
@@ -73,14 +80,76 @@ This was created by David Lee Using Python()
 See D-V-DLee for Github 
 
 
+```{r}
+AML.CDE <- read.csv("scripts/AML_assay_clinical.csv", row.names = 1) %>%
+  set_rownames(.$TARGET.USI)
+
+dim(AML.CDE)
+head(AML.CDE[,1:5])
+```
+
+
+```{r}
+table(AML.CDE$Diagnostic.ID)
+```
+
+```{r}
+NBL.CDE <- read.csv("scripts/NBL_assay_clinical.csv", row.names = 1)
+
+dim(NBL.CDE)
+head(NBL.CDE[,1:5])
+```
+
+```{r}
+table(NBL.CDE$Diagnostic.ID)
+```
+
+
+```{r}
+WT.CDE <- read.csv("scripts/WT_assay_clinical.csv", row.names = 1)
+
+dim(WT.CDE)
+head(WT.CDE[,1:5])
+```
+
+
+```{r}
+table(WT.CDE$Diagnostic.ID)
+```
+
+Remove Non-diagnostic samples: 04A, 40A, 02A, 06A, 11A
+
+
 #Examine boxplots of the 
 
 ```{r}
+cpm.m <- cpm %>% 
+  rownames_to_column("Gene") %>% 
+  gather(USI,Log2.CPM, -Gene) %>%
+  mutate(Group=case_when(
+    grepl("TARGET.30.", USI) ~ "NBL",
+    grepl("TARGET.20.", USI) ~ "AML",
+    grepl("TARGET.50.", USI) ~ "WT"))
 
+head(cpm.m)
+```
+
+```{r}
+table(cpm.m$Group)
+```
+
+
+```{r fig.width=18, fig.height=6}
+ggplot(cpm.m[cpm.m$Group != "WT",], 
+       aes(x = reorder(USI, Log2.CPM, FUN = median), y = Log2.CPM, fill=Group)) +
+  geom_boxplot()
 ```
 
 
 
+```{r}
+sessionInfo()
+```
 
 
 

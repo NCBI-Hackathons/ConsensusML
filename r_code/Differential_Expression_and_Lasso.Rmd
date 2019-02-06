@@ -1,0 +1,377 @@
+---
+title: 'Normalize Counts and Merge in '
+author: "Jenny Smith"
+date: "February 4, 2018"
+output: html_document
+---
+
+
+#Set-up 
+
+```{r setup}
+library(knitr)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE, fig.align='center', fig.height=5, fig.width=8, dpi = 600)
+knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
+options(stringsAsFactors = FALSE)
+```
+
+
+```{r message = FALSE, warning=FALSE}
+library(stringr)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(tibble)
+library(tidyr)
+getwd()
+```
+
+
+#Read in Counts 
+
+```{r}
+counts <- read.csv("TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
+
+head(counts[,1:5])
+dim(counts)
+```
+
+
+#Use the Merged Clinical and TMMCPM 
+
+This was created by David Lee Using Python()
+See D-V-DLee for Github 
+
+```{r}
+AML.CDE <- read.csv("Clinical_Data/AML_assay_clinical.csv", row.names = 1) 
+
+dim(AML.CDE)
+head(AML.CDE[,1:5])
+
+getwd()
+```
+
+```{r}
+table(AML.CDE$Diagnostic.ID)
+```
+
+```{r}
+NBL.CDE <- read.csv("Clinical_Data/NBL_assay_clinical.csv", row.names = 1)
+
+dim(NBL.CDE)
+head(NBL.CDE[,1:5])
+```
+
+```{r}
+table(NBL.CDE$Diagnostic.ID)
+```
+
+```{r}
+WT.CDE <- read.csv("Clinical_Data/WT_assay_clinical.csv", row.names = 1)
+
+dim(WT.CDE)
+head(WT.CDE[,1:5])
+```
+
+```{r}
+table(WT.CDE$Diagnostic.ID)
+```
+
+Remove Non-diagnostic samples: 04A, 40A, 02A, 06A, 11A
+
+
+#Examine and Clean Clinical Data Elements
+
+```{r}
+cols.AML <- colnames(AML.CDE) %>% grep("^ENSG", ., invert=T, value=T)
+
+# cols.AML
+
+
+```
+
+```{r}
+AML.CDE.s <- AML.CDE %>%
+  #filter out non-diagnostic samples for now
+  filter(! grepl( "04A|40A|02A|06A|11A", Diagnostic.ID)) %>% 
+  mutate_at(vars(c(45:47)), funs(gsub("NO", "No", .))) %>%
+  set_rownames(.$TARGET.USI)
+
+
+dim(AML.CDE.s)
+head(AML.CDE.s[,1:5])
+```
+
+
+
+
+#Define a Training and Testing Set 
+
+
+```{r}
+set.seed(2019)
+AML.train <- sample(AML.CDE.s$TARGET.USI, size = nrow(AML.CDE.s)*(2/3),replace = FALSE) %>% 
+  gsub("-",".", .)
+
+length(AML.train)
+head(AML.train)
+
+# write.csv(AML.train, "r_code/TARGET_AML_Training_Samples.csv")
+```
+ "TARGET.20.PASFEW" "TARGET.20.PARYFN" "TARGET.20.PANSBH" "TARGET.20.PARPDS" "TARGET.20.PAEIKD"
+[6] "TARGET.20.PAEFGT"
+
+```{r}
+AML.test <- AML.CDE.s$TARGET.USI[!AML.CDE.s$TARGET.USI %in% AML.train] %>% 
+    gsub("-",".", .)
+
+head(AML.test)
+length(AML.test)
+
+# write.csv(AML.test, "r_code/TARGET_AML_Testing_Samples.csv")
+```
+
+[1] "TARGET.20.PADYIR" "TARGET.20.PADZCG" "TARGET.20.PAEAKL" "TARGET.20.PAECCE" "TARGET.20.PAEERJ"
+[6] "TARGET.20.PAEFGR"
+
+
+```{r}
+CDE.train <- AML.CDE.s %>%
+  mutate_at(vars(TARGET.USI), funs(gsub("-",".", .))) %>% 
+  filter(TARGET.USI %in% AML.train) %>% 
+  mutate(RiskGroup.Class=case_when(
+    grepl("High|Standard", Risk.group) ~ "Yes", 
+    grepl("Low", Risk.group) ~ "No", 
+    grepl("Unknown", Risk.group) ~ "Unknown" )) %>% 
+  mutate(Age.Class=ifelse(Age.at.Diagnosis.in.Days > median(Age.at.Diagnosis.in.Days), "Yes", "No")) %>%
+  mutate(MLL.Update=case_when(
+    Primary.Cytogenetic.Code == "MLL" ~ "MLL", 
+    Primary.Cytogenetic.Code == "Unknown" ~ "Unknown", 
+    TRUE ~ "No"))
+
+dim(CDE.train)
+
+table(CDE.train$Risk.group)
+table(CDE.train$RiskGroup.Class)
+table(CDE.train$Age.Class)
+table(CDE.train$MLL.Update)
+```
+
+```{r}
+# lapply(CDE.train[c(15:35,45:47)], table)
+```
+
+
+#Split the Expression Data into Train/Test
+
+```{r}
+#remove any patient samples that are not diagnositic
+Keep <- colnames(counts) %>% 
+  grep("04A|40A|02A|06A|11A", ., invert=TRUE, value=TRUE) %>% 
+  grep("TARGET.20", ., value=TRUE)
+
+#remove end of the barcodes to match Clinical Data Rows 
+newColnames <- Keep %>%  gsub("\\.0[0-9]A.+","" ,.) 
+
+
+#Subset the raw counts for diagnostic samples and rename columns
+counts.sub <- counts[,Keep]
+colnames(counts.sub) <- newColnames
+dim(counts.sub) #60,488 by 145 samples
+```
+
+```{r}
+#Select Training Set
+counts.train <- counts.sub[,AML.train]
+
+dim(counts.train)
+```
+
+
+#Differential Expression Analysis
+
+Split median Age (ref == young (0))
+Split on High+std vs Low (ref)
+
+
+```{r}
+source("r_code/Limma_Voom_DE_Function.R")
+```
+
+## Risk Group DEGs
+
+```{r}
+pheno <- CDE.train$RiskGroup.Class %>% 
+  set_names(CDE.train$TARGET.USI) %>%
+  .[.!="Unknown"]
+
+head(pheno)
+length(pheno)
+table(pheno)
+```
+
+```{r}
+DE.RG <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno)
+```
+
+```{r}
+DE.RG$desingMatrix[1:5,]
+table(DE.RG$desingMatrix[,1])
+dim(DE.RG$voomTransformation$E) #17445    93
+```
+
+```{r}
+head(DE.RG$DEGs)
+dim(DE.RG$DEGs)
+
+# write.csv(DE.RG$DEGs, "r_code/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv")
+```
+
+## Age DEGs (by Median)
+
+```{r}
+pheno2 <- CDE.train$Age.Class %>% 
+  set_names(CDE.train$TARGET.USI) %>%
+  .[.!="Unknown"]
+
+head(pheno2)
+length(pheno2)
+table(pheno2)
+```
+
+
+```{r}
+DE.Age <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno2)
+```
+
+```{r}
+head(DE.Age$DEGs)
+
+write.csv(DE.Age$DEGs, "r_code/TARGET_AML_Older_vs_Younger_by_MedianAge_DEGs.csv")
+```
+
+
+Deliverables
+1. notebook/script
+2. significance of findings
+
+#MLL 
+
+```{r}
+pheno3 <- CDE.train$MLL.Update %>% 
+  set_names(CDE.train$TARGET.USI) %>% 
+  .[. != "Unknown"]
+
+table(pheno3)
+```
+
+```{r}
+DE.MLL <- voom_DE(counts.df = counts.train, ref = "No", pheno = pheno3)
+```
+
+
+```{r}
+dim(DE.MLL$DEGs) # 1575    6
+
+# write.csv(DE.MLL$DEGs, "r_code/TARGET_AML_MLL_vs_Others_DEGs.csv")
+```
+
+```{r}
+table(CDE.train$MLL, CDE.train$Primary.Cytogenetic.Code)
+```
+
+
+
+#Lasso with DEGs
+
+```{r}
+library(glmnet)
+```
+
+```{r}
+glm.binom <- function(x,y,df,standardize=FALSE){
+  library(glmnet)
+  #df is the matrix with the response and  gene expression. Patietns as rownames.
+  #x is the expresion matrix, genes as rownames. 
+  
+  response <- y
+  predictors <- x
+  
+  y <- factor(df[,y])
+  x <- as.matrix(df[,x]) #NOTE: for categorical predictors data, should use model.matrix 
+  
+  if (any(is.na(y))){
+    print("There Are Missing Values.")
+    return(y)
+  }else if (length(levels(y)) > 2 ){
+    print("More tha two levels")
+    
+    sel <- grepl("yes|no", df[,response]) #select only the yes or no. 
+    df <- df[sel, ] #subset the df
+    
+    y <- factor(df[,response])
+    x <- as.matrix(df[,predictors])
+  }
+  
+  #Check the reference level of the response.
+  contrast <- contrasts(y)
+
+  #Use validation set approach. split observations into approx. equal groups.
+  set.seed(1) #changing this, see dramaticaly changes in results. THUS NEED an outer loop for sample cross-validation.  
+  train <- sample(c(TRUE,FALSE), nrow(x), replace = TRUE)
+  test <- (!train)
+
+  train.names <- rownames(df)[train]
+  test.names <- rownames(df)[test]
+
+  #grid of lambda values to test.
+  grid <- 10^ seq(10,-2, length=100)
+
+  #training model.
+  mod <- glmnet(x[train,], y[train],family = "binomial",
+                  standardize = standardize, lambda = grid, intercept = FALSE)
+
+  #use cross-validation on the training model.CV only for lambda
+  set.seed(1) 
+  cv.lamdba <- cv.glmnet(x[train,], y[train],family = "binomial",
+                  standardize = standardize, lambda = grid, nfolds = 5,
+                  type.measure = "deviance", intercept = FALSE)
+
+  #Select lambda min.
+  lambda.min <- cv.lamdba$lambda.min
+
+  #predict the classes
+  pred.class <- predict(mod, newx = x[test,], type="class", s=lambda.min)
+
+  #find the test error
+  tab <- table(pred.class,y[test])
+  testError <- mean(pred.class != y[test]) #how many predicted classes were incorrect
+
+  #Fit the full dataset.
+  final <- glmnet(x, y,family = "binomial",
+                  standardize = standardize, lambda = grid, intercept = FALSE)
+
+  #Extract the coefficients
+  coef <- predict(final, type="coefficients", s=lambda.min)
+  idx <- which(coef != 0)
+  nonZero <- coef[idx,]
+
+  list <- list(train.names, test.names, contrast, mod, cv.lamdba,testError, final, nonZero)
+  names(list) <- c("training.set", "testing.set","contrast", "train.model",
+                   "cv.train", "test.error", "final.model", "nonzero.coef")
+  return(list)
+  
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
