@@ -1,4 +1,4 @@
-AML RNA-seq Feature Selection and Biomarker Identification with Machine Learning [![Build Status](https://travis-ci.org/NCBI-Hackathons/RNAseq_Cancer_Biomarkers.svg?branch=master)](https://travis-ci.org/NCBI-Hackathons/RNAseq_Cancer_Biomarkers) [![DOI](https://zenodo.org/badge/169003170.svg)](https://zenodo.org/badge/latestdoi/169003170)
+AML RNA-seq Feature Selection and Biomarker Identification with Machine Learning [![DOI](https://zenodo.org/badge/169003170.svg)](https://zenodo.org/badge/latestdoi/169003170)
 ---
 
 # RNAseq_Cancer_Biomarkers
