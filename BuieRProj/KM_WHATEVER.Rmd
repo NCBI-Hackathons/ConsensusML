@@ -272,12 +272,46 @@ SVMResults <- runSVM(1000,"linear", training, as.factor(trainclass), testing, as
 
 colnames(SVMResults$weightsvect)
 weights <-SVMResults$weightsvect[1:1910]
-quantile(weights)
+quantiles <- quantile(weights)
+
+tall <- as.data.frame(t(SVMResults$weightsvect))
+tall$names <- row.names(tall)
+high4 <- tall[tall$V1 > quantiles[4],]$names
+low4 <- tall[tall$V1 < quantiles[2],]$names
+#this provided 477 observations on both ends
+
+#applying 10% quantiles to narrow selection
+tenthquantiles <- quantile(weights, probs = seq(0,1,0.10))
 
 
+high10 <- tall[tall$V1 > tenthquantiles[10],]$names
+low10 <- tall[tall$V1 < tenthquantiles[2],]$names
+
+#applying 5% quantiles to narrow selection
+twentyquantiles <- quantile(weights, probs = seq(0,1,0.05))
+
+
+high20 <- tall[tall$V1 > twentyquantiles[20],]$names
+low20 <- tall[tall$V1 < twentyquantiles[2],]$names
+
+#applying 1% quantiles to narrow selection
+onehundredquantiles <- quantile(weights, probs = seq(0,1,0.01))
+
+
+high100 <- tall[tall$V1 > onehundredquantiles[100],]$names
+low100 <- tall[tall$V1 < onehundredquantiles[2],]$names
+
+#applying .1% quantiles to narrow selection
+onethousandthquantiles <- quantile(weights, probs = seq(0,1,0.001))
+
+
+high1000 <- tall[tall$V1 > onethousandthquantiles[1000],]$names
+low1000 <- tall[tall$V1 < onethousandthquantiles[2],]$names
 
 
 ```
+
+Weights were divded into quartiles. Genes expressed in the outer two quartiles recorded for further analysis
 
 ## Aim 3 (low priority, should include in aim 1 in rewrite)
 
