@@ -5,14 +5,28 @@ library(limma)
 library(VennDiagram)
 
 #reading in clinical data files
-AML_clinical<-read.csv('AML_assay_clinical.csv')
+AML_clinical<-read.csv('/Users/vikas/Documents/UW/Masters /seattle_snowhack/tuesday/RNAseq_Cancer_Biomarkers/Clinical_Data/AML_dataframe.csv')
 
 #raw count expression data
-all_expression_data<-read.csv('TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs', header=TRUE)
+Full_expression_data<-read.csv('/Users/vikas/Documents/UW/Masters /seattle_snowhack/tuesday/RNAseq_Cancer_Biomarkers/TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv', header=TRUE)
+DEGs<-read.csv('/Users/vikas/Documents/UW/Masters /seattle_snowhack/tuesday/RNAseq_Cancer_Biomarkers/Clinical_Data/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv')
 
 #setting rownames for MLseq
-rownames(all_expression_data)<-all_expression_data$Genes
-all_expression_data$Genes<-NULL
+rownames(Full_expression_data)<-Full_expression_data$Genes
+Full_expression_data$Genes<-NULL
+
+#deleting genes not in list of DEGs 
+DEG_names<-DEGs$X
+rownames_full_expression_data<-rownames(Full_expression_data)
+rows_to_keep<-c()
+for(i in 1:length(rownames_full_expression_data)){ 
+  print(i)
+  if(rownames_full_expression_data[i] %in% DEG_names){ 
+    rows_to_keep<-append(rows_to_keep,i)
+    }
+  }
+
+all_expression_data<-Full_expression_data[rows_to_keep,]
 
 #removing duplicate samples
 AML_colnames<-c()
@@ -255,6 +269,13 @@ pred.NSC <- predict(fit.NSC, data.testS4)
 
 
 
+split_strings<-function(fitlist) { 
+  for(i in 1:length(fitlist)){ 
+    fitlist[i]<-strsplit(fitlist[i],'[.]')[[1]][1]
+    }
+  return(fitlist)
+}
+
 voomNSC<-selectedGenes(fit.voomNSC)
 voomDLDA<-selectedGenes(fit.voomDLDA)
 PLDA<-selectedGenes(fit.plda)
@@ -263,15 +284,30 @@ nblda<-selectedGenes(fit.nblda)
 svm<-selectedGenes(fit.svm)
 
 
-write.csv(voomNSC, 'voomnsc.csv')
-write.csv(PLDA,'plda.csv')
-write.csv(PLDA2,'plda2.csv')
+
+
+write.csv(split_strings(voomNSC), 'DEG_voomnsc.csv')
+write.csv(split_strings(PLDA),'DEG_plda.csv')
+write.csv(split_strings(PLDA2),'DEG_plda2.csv')
 #annotate the genes 
 #look at them in ommim 
 
 
 #genes IDs from biomart search of the csv files created
-all_genes<-c("MPO", "MPO", "RPS20", "CD74", "HSPA5", "PABPC1", "ACTB", "ACTB", "ACTB", "ACTB", "ACTB", "ACTB", "ACTB", "FTL", "FTL", "FTL", "FTL", "FTL", "FTL", "LGALS1", "RPL3", "RPS19", "RPS19", "RPS19", "RPL28", "PFN1", "PFN1", "GAPDH", "RPS12", "DUSP1", "SRGN", "ZFP36", "RPS15A", "RPS6", "RPS24", "RPS24", "RPS11", "RPL13A", "SH3BGRL3", "RPS3A", "EEF1A1", "RPL29", "LAPTM5", "RPL9", "RPL27A", "B2M", "B2M", "B2M", "B2M", "EEF2", "EEF2", "FTH1", "FTH1", "CXCL8", "FOS", "AZU1", "CFL1", "EIF1", "RPL4", "RPS27", "RPS27", "RPS17", "RPS17", "ACTG1", "ACTG1", "ACTG1", "ACTG1", "ACTG1", "ACTG1", "ACTG1", "H1FX", "PTMA", "HBA2", "HBA2", "HBA2", "HBA2", "HBA2", "HBA2", "HBA2", "ELANE", "ELANE", "ELANE", "RPS26", "RPS26", "RPL37A", "RPL12", "RPS4X", "MT-ND6", "MT-ND6", "MT-ND6", "MT-ND6", "MT-ND6", "MT-ND6", "MT-CYB", "MT-CYB", "MT-CYB", "MT-CYB", "MT-CYB", "MT-ND2", "MT-ND2", "MT-ND2", "MT-ND2", "MT-ND5", "MT-ND5", "MT-ND5", "MT-ND5", "MT-ND5", "MT-ND5", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-ND3", "MT-ND3", "MT-ND3", "MT-ND4", "MT-ND4", "MT-ND4", "MT-ND4", "MT-ND4", "MT-ND4", "MT-ND1", "MT-ND1", "MT-ND1", "MT-ND1", "MT-ND1", "MT-ND1", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-CO3", "MT-CO3", "MT-CO3", "MT-CO3", "MT-CO3", "MT-CO3", "HLA-DRA", "TMSB4X", "MT-RNR2", "MT-ND4L", "MT-ND4L", "MT-ATP8", "MT-ATP8", "MT-ATP8", "RPS18", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "MTATP6P1", "MALAT1")
-all_genes<-unique(all_genes)
-all_genes
+
+#below is from the full_expression_data
+#all_genes<-c("MPO", "MPO", "RPS20", "CD74", "HSPA5", "PABPC1", "ACTB", "ACTB", "ACTB", "ACTB", "ACTB", "ACTB", "ACTB", "FTL", "FTL", "FTL", "FTL", "FTL", "FTL", "LGALS1", "RPL3", "RPS19", "RPS19", "RPS19", "RPL28", "PFN1", "PFN1", "GAPDH", "RPS12", "DUSP1", "SRGN", "ZFP36", "RPS15A", "RPS6", "RPS24", "RPS24", "RPS11", "RPL13A", "SH3BGRL3", "RPS3A", "EEF1A1", "RPL29", "LAPTM5", "RPL9", "RPL27A", "B2M", "B2M", "B2M", "B2M", "EEF2", "EEF2", "FTH1", "FTH1", "CXCL8", "FOS", "AZU1", "CFL1", "EIF1", "RPL4", "RPS27", "RPS27", "RPS17", "RPS17", "ACTG1", "ACTG1", "ACTG1", "ACTG1", "ACTG1", "ACTG1", "ACTG1", "H1FX", "PTMA", "HBA2", "HBA2", "HBA2", "HBA2", "HBA2", "HBA2", "HBA2", "ELANE", "ELANE", "ELANE", "RPS26", "RPS26", "RPL37A", "RPL12", "RPS4X", "MT-ND6", "MT-ND6", "MT-ND6", "MT-ND6", "MT-ND6", "MT-ND6", "MT-CYB", "MT-CYB", "MT-CYB", "MT-CYB", "MT-CYB", "MT-ND2", "MT-ND2", "MT-ND2", "MT-ND2", "MT-ND5", "MT-ND5", "MT-ND5", "MT-ND5", "MT-ND5", "MT-ND5", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-CO1", "MT-ND3", "MT-ND3", "MT-ND3", "MT-ND4", "MT-ND4", "MT-ND4", "MT-ND4", "MT-ND4", "MT-ND4", "MT-ND1", "MT-ND1", "MT-ND1", "MT-ND1", "MT-ND1", "MT-ND1", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-ATP6", "MT-CO3", "MT-CO3", "MT-CO3", "MT-CO3", "MT-CO3", "MT-CO3", "HLA-DRA", "TMSB4X", "MT-RNR2", "MT-ND4L", "MT-ND4L", "MT-ATP8", "MT-ATP8", "MT-ATP8", "RPS18", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HLA-B", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "HBB", "MTATP6P1", "MALAT1")
+
+#from_DEG
+#all_genes<-unique(all_genes)
+#all_genes
+
+DEG_voomNSC<-c("MPO","MPO","MPO","RUNX3","HOXA9","LAT2","C15orf39","TPSAB1","HBA2","HBA2","HBA2","HBA2","HBA2","HBA2","HBA2","HBA2","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","BAHCC1")
+DEG_PLDA<-c("CD99","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","PRKAR2B","MPO","MPO","ITGA2B","ITGA2B","ITGA2B","ITGA2B","MGST1","CD4","CD74","RUNX3","CD44","SLC2A3","KLF6","KLF6","HOXA9","ITM2A","LAT2","CTSG","NFKBIA","NFKBIA","NFKBIA","NFKBIA","NFKBIA","RGCC","TSC22D1","MSLN","CLIP3","MEST","LGALS3BP","SLC9A3R1","SLC9A3R1","AREG","KLF3","SLC38A1","MAN1A1","RHAG","RHAG","RHAG","CD83","SPARC","SPARC","CCND2","CCND2","CCND2","ELL2","CSF3R","CSF3R","CSF3R","CSF3R","CSF3R","CSF3R","SOCS2","NR4A1","F13A1","F13A1","F13A1","F13A1","CDKN1A","EREG","IL1B","LAMP5","HCST","KLF2","ZFP36","TRPM4","TRPM4","TRPM4","PRAM1","CA1","EMP1","ANXA1","ITM2C","GYPC","GYPC","GYPC","DUSP6","DUSP6","DUSP6","DUSP6","IFITM3","RHOB","CSRNP1","PLIN2","ALAS2","ALAS2","ALAS2","ALAS2","ATF3","CPA3","DLC1","ANPEP","C15orf39","MN1","MN1","CXCL8","CD52","LUZP1","AHSP","TRH","TRH","JUNB","TPSAB1","C1QTNF4","JUP","JUP","JUP","JUP","JUP","JUP","CD34","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","GATA2","GATA2","GATA2","GATA2","GATA2","GATA2","GATA2","GATA2","ANXA2","PDE4B","HIST2H2BE","MAFF","PRSS57","HIST1H1C","HBA2","HBA2","HBA2","HBA2","HBA2","HBA2","HBA2","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DQA1","HLA-DQA1","HLA-DQA1","SERPINA1","SERPINA1","SERPINA1","TPSB2","ELANE","ELANE","ELANE","S100A10","CFD","CFD","PIM3","HLA-DRB5","HLA-DMA","HLA-DRA","HBA1","HBA1","HBA1","HBA1","HBA1","HBA1","HBA1","HBA1","CEBPD","HBD","HBD","HLA-DPB1","HLA-DPB1","HLA-DPA1","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","BAHCC1")
+DEG_PLDA2<-c("CD99","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","SLC4A1","PRKAR2B","MPO","MPO","ITGA2B","ITGA2B","ITGA2B","ITGA2B","MGST1","CD4","CD74","RUNX3","CD44","SLC2A3","KLF6","KLF6","HOXA9","ITM2A","LAT2","CTSG","NFKBIA","NFKBIA","NFKBIA","NFKBIA","NFKBIA","RGCC","TSC22D1","MSLN","CLIP3","MEST","LGALS3BP","SLC9A3R1","SLC9A3R1","AREG","KLF3","SLC38A1","MAN1A1","RHAG","RHAG","RHAG","CD83","SPARC","SPARC","CCND2","CCND2","CCND2","ELL2","CSF3R","CSF3R","CSF3R","CSF3R","CSF3R","CSF3R","SOCS2","NR4A1","F13A1","F13A1","F13A1","F13A1","CDKN1A","EREG","IL1B","LAMP5","HCST","KLF2","ZFP36","TRPM4","TRPM4","TRPM4","PRAM1","CA1","EMP1","ANXA1","ITM2C","GYPC","GYPC","GYPC","DUSP6","DUSP6","DUSP6","DUSP6","IFITM3","RHOB","CSRNP1","PLIN2","ALAS2","ALAS2","ALAS2","ALAS2","ATF3","CPA3","DLC1","ANPEP","C15orf39","MN1","MN1","CXCL8","CD52","LUZP1","AHSP","TRH","TRH","JUNB","TPSAB1","C1QTNF4","JUP","JUP","JUP","JUP","JUP","JUP","CD34","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","HLA-DQB1","GATA2","GATA2","GATA2","GATA2","GATA2","GATA2","GATA2","GATA2","ANXA2","PDE4B","HIST2H2BE","MAFF","PRSS57","HIST1H1C","HBA2","HBA2","HBA2","HBA2","HBA2","HBA2","HBA2","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DRB1","HLA-DQA1","HLA-DQA1","HLA-DQA1","SERPINA1","SERPINA1","SERPINA1","TPSB2","ELANE","ELANE","ELANE","S100A10","CFD","CFD","PIM3","HLA-DRB5","HLA-DMA","HLA-DRA","HBA1","HBA1","HBA1","HBA1","HBA1","HBA1","HBA1","HBA1","CEBPD","HBD","HBD","HLA-DPB1","HLA-DPB1","HLA-DPA1","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","HBB","BAHCC1")
+
+
+unique_DEG_voomNSC<-unique(DEG_voomNSC)
+unique_DEG_PLDA<-unique(DEG_PLDA)
+unique_DEG_PLDA2<-unique(DEG_PLDA2)
 
