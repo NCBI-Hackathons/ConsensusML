@@ -4,18 +4,11 @@ library(xlsx)
 library(limma)
 library(VennDiagram)
 
-
-#reading in expression data
-setwd("/Users/vikas/Documents/UW/Masters /seattle_snowhack/RNAseq_Cancer_Biomarkers")
-
 #reading in clinical data files
-AML_clinical<-read.csv('/Users/vikas/Documents/UW/Masters /seattle_snowhack/tuesday/RNAseq_Cancer_Biomarkers/Clinical_Data/AML_dataframe.csv')
-NBL_clinical<-read.xlsx('/Users/vikas/Documents/UW/Masters /seattle_snowhack/RNAseq_Cancer_Biomarkers/Clinical_Data/TARGET_NBL_ClinicalData_20151124.xlsx',sheetIndex = 1)
-WT_clinical<-read.csv('/Users/vikas/Documents/UW/Masters /seattle_snowhack/tuesday/RNAseq_Cancer_Biomarkers/scripts/WT_assay_clinical.csv')
+AML_clinical<-read.csv('AML_assay_clinical.csv')
 
 #raw count expression data
-all_expression_data<-read.csv('/Users/vikas/Documents/UW/Masters /seattle_snowhack/tuesday/RNAseq_Cancer_Biomarkers/TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv', header=TRUE)
-DEGs<-read.csv('/Users/vikas/Documents/UW/Masters /seattle_snowhack/tuesday/RNAseq_Cancer_Biomarkers/Clinical_Data/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv')
+all_expression_data<-read.csv('TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs', header=TRUE)
 
 #setting rownames for MLseq
 rownames(all_expression_data)<-all_expression_data$Genes
