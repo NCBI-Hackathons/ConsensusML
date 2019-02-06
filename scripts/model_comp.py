@@ -4,7 +4,7 @@ from sklearn.ensemble import  RandomForestClassifier, GradientBoostingClassifier
 from xgboost import XGBClassifier
 
 def model_comp(df, X_train, X_test, y_train, y_test):
-    xgboost_model = XGBClassifier(learning_rate = 0.01, max_depth = 3, n_estimators = 300, random_state=8)
+    xgboost_model = XGBClassifier(learning_rate = 0.01, max_depth = 3, n_estimators = 700, random_state=8)
     gradient_boost_model = GradientBoostingClassifier(learning_rate=0.01, max_depth=4, max_features='log2', min_samples_leaf=4, n_estimators=280, subsample=0.25, random_state=8)
     random_forest_model = RandomForestClassifier(n_estimators=300, max_depth=3, verbose=1, random_state=8)
 
@@ -31,6 +31,7 @@ def model_comp(df, X_train, X_test, y_train, y_test):
     print("Gradient Boost Log Loss " + str(gradient_boost_ll))
     print("Random Forest Log Loss " + str(random_forest_ll))
     print("XGBoost Log Loss " + str(xgboost_ll))
+    return xgboost_model, random_forest_model
 
 
 def data_prep_columns(df, var):
@@ -87,3 +88,65 @@ def model_prep(df, columns_to_take):
 
     X_train, X_test, y_train, y_test = train_test_split(X.values, y, test_size=0.33, random_state=8)
     return X_train, X_test, y_train, y_test, holdout
+
+def model_prep_loc(df, columns_to_take):
+    data = df.loc[:, columns_to_take]
+    y = df.loc[data.index, 'Low Risk']
+    data['label'] = y.copy()
+
+    holdout = data.sample(frac=.2, random_state=8)
+    train = data.drop(holdout.index).copy()
+    X = train.iloc[:, :-1]
+    y = train['label']
+
+    X_train, X_test, y_train, y_test = train_test_split(X.values, y, test_size=0.33, random_state=8)
+    return X_train, X_test, y_train, y_test, holdout
+
+def xgboost_tuner(X_train, X_test, y_train, y_test, n_estimators_num):
+    """
+
+    Parameters
+    ----------------
+    X_train, X_test, y_train, y_test derived form train_test_split
+    n_estimators_num is a list [3, 4, 5, 6, 7] of len(5)
+
+    Returns
+    ----------------
+    xg boost tuning performance
+    """
+    trees = [100 * x for x in n_estimators_num]
+    a, b, c, d, e = trees
+
+    xgb1 = XGBClassifier(learning_rate=0.01, n_estimators=a, random_state=8)
+    xgb2 = XGBClassifier(learning_rate=0.01, n_estimators=b, random_state=8)
+    xgb3 = XGBClassifier(learning_rate=0.01, n_estimators=c, random_state=8)
+    xgb4 = XGBClassifier(learning_rate=0.01, n_estimators=d, random_state=8)
+    xgb5 = XGBClassifier(learning_rate=0.01, n_estimators=e, random_state=8)
+
+    xgb1.fit(X_train, y_train)
+    xgb2.fit(X_train, y_train)
+    xgb3.fit(X_train, y_train)
+    xgb4.fit(X_train, y_train)
+    xgb5.fit(X_train, y_train)
+
+
+    xgb_p1 =  xgb1.predict_proba(X_test)
+    xgb_p2 =  xgb2.predict_proba(X_test)
+    xgb_p3 =  xgb3.predict_proba(X_test)
+    xgb_p4 =  xgb4.predict_proba(X_test)
+    xgb_p5 =  xgb5.predict_proba(X_test)
+
+
+
+    xgb1_ll = log_loss(y_test, xgb_p1)
+    xgb2_ll = log_loss(y_test, xgb_p2)
+    xgb3_ll = log_loss(y_test, xgb_p3)
+    xgb4_ll = log_loss(y_test, xgb_p4)
+    xgb5_ll = log_loss(y_test, xgb_p5)
+
+
+    print(f"XGB n_estimators: {a} log loss " + str(xgb1_ll))
+    print(f"XGB n_estimators: {b} log loss " + str(xgb2_ll))
+    print(f"XGB n_estimators: {c} log loss " + str(xgb3_ll))
+    print(f"XGB n_estimators: {d} log loss " + str(xgb4_ll))
+    print(f"XGB n_estimators: {e} log loss " + str(xgb5_ll))
