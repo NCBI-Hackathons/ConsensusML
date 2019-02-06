@@ -118,7 +118,7 @@ def model_prep_loc(df, columns_to_take):
     y = train['label']
 
     X_train, X_test, y_train, y_test = train_test_split(X.values, y, test_size=0.33, random_state=8)
-    return X_train, X_test, y_train, y_test, X
+    return X_train, X_test, y_train, y_test, holdout, X
 
 def xgboost_tuner(X_train, X_test, y_train, y_test, n_estimators_num):
     """
