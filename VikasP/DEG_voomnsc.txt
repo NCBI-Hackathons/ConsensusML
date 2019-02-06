@@ -1,0 +1,46 @@
+Gene stable ID	Gene description	Phenotype description	Gene name
+ENSG00000005381	myeloperoxidase [Source:HGNC Symbol;Acc:HGNC:7218]	Alzheimer disease	MPO
+ENSG00000005381	myeloperoxidase [Source:HGNC Symbol;Acc:HGNC:7218]	MYELOPEROXIDASE DEFICIENCY	MPO
+ENSG00000005381	myeloperoxidase [Source:HGNC Symbol;Acc:HGNC:7218]	MYELOPEROXIDASE DEFICIENCY	MPO
+ENSG00000020633	runt related transcription factor 3 [Source:HGNC Symbol;Acc:HGNC:10473]		RUNX3
+ENSG00000078399	homeobox A9 [Source:HGNC Symbol;Acc:HGNC:5109]		HOXA9
+ENSG00000086730	linker for activation of T cells family member 2 [Source:HGNC Symbol;Acc:HGNC:12749]		LAT2
+ENSG00000167173	chromosome 15 open reading frame 39 [Source:HGNC Symbol;Acc:HGNC:24497]		C15orf39
+ENSG00000172236	tryptase alpha/beta 1 [Source:HGNC Symbol;Acc:HGNC:12019]		TPSAB1
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	ALPHA-THALASSEMIA	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	ERYTHROCYTOSIS FAMILIAL 7	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	HEINZ BODY ANEMIAS	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	HEMOGLOBIN H DISEASE	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Alpha-thalassemia - intellectual disability syndrome linked to chromosome 16	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Hb Bart's Hydrops Fetalis	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	HEMOGLOBIN H DISEASE	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Hemoglobin M disease	HBA2
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	ALPHA-THALASSEMIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA DOMINANT INCLUSION BODY TYPE	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	ERYTHROCYTOSIS FAMILIAL 6	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	FETAL HEMOGLOBIN QUANTITATIVE TRAIT LOCUS 1	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	HEINZ BODY ANEMIAS	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	MALARIA SUSCEPTIBILITY TO MALARIA RESISTANCE TO INCLUDED	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	METHEMOGLOBINEMIA BETA TYPE	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	SICKLE CELL ANEMIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA INTERMEDIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Beta-thalassemia major	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Delta-beta thalassemia	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Dominant beta-thalassemia	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Heinz body anemia	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin C disease	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin C-beta-thalassemia syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin D disease	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin E disease	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin E-beta-thalassemia syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin Lepore-beta-thalassemia syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin M disease	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hereditary persistence of fetal hemoglobin-beta-thalassemia syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hereditary persistence of fetal hemoglobin-sickle cell disease syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	SICKLE CELL ANEMIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-beta-thalassemia disease syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin C disease syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin D disease syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin E disease syndrome	HBB
+ENSG00000266074	BAH domain and coiled-coil containing 1 [Source:HGNC Symbol;Acc:HGNC:29279]		BAHCC1
