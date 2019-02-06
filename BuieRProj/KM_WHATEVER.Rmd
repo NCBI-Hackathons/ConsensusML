@@ -14,6 +14,9 @@ library(useful)
 library(ggplot2)
 library(e1071)
 library(ROCR)
+
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
 ```
 
 # Background
@@ -22,9 +25,9 @@ Acute Myeloid Leukemia is a cancer affecting blood stem cells. Onset is sudden a
 
 # Data
 
-Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients. 
+Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients. Patients with multiple records had later records excluded so that N=145 results were retained in the study. Among the 214?? genetic assays available, 1910 were included. (exclusion criterea here)
 
-## Aim #1
+## Aim #1 (depreciated)
 
 Identfiy relationships between categories of AML and genetic assay results
 
@@ -34,11 +37,31 @@ Identfiy relationships between categories of AML and genetic assay results
 PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
 
 #reading compiled patient data
-CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv")
+CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv", stringsAsFactors = FALSE)
+CleanedWithGenes$X <- NULL
+
+#temp testing
+backup <- CleanedWithGenes
+CleanedWithGenes <- backup
+
+# removing non clinical cases
+CleanedWithGenes <- CleanedWithGenes[CleanedWithGenes$Diagnostic.ID %!in% c("04A","40A","02A","06A","11A"),] 
 
 #reading test and train identifiers
-SampleTrain <- read.csv("./data/TARGET_AML_Training_Samples.csv")
-SampleTest <-  read.csv("./data/TARGET_AML_Testing_Samples.csv")
+SampleTrain <- read.csv("./data/TARGET_AML_Training_Samples.csv", stringsAsFactors = FALSE)
+SampleTest <-  read.csv("./data/TARGET_AML_Testing_Samples.csv", stringsAsFactors = FALSE)
+
+#assigning train and test variable to full genetic/patient DF
+CleanedWithGenes$train <- 0
+CleanedWithGenes[CleanedWithGenes$TARGET.USI  %in% SampleTest[,1],]$train <- 1
+
+#subset to DEG
+DEGs <- read.csv("./data/TARGET_AML_HIGH.Std.Risk_vs_LowRisk_DEGs.csv", stringsAsFactors = FALSE)
+CleanedWithGenesDEG <- CleanedWithGenes[, colnames(CleanedWithGenes) %in% DEGs$X]
+GeneRiskTrain <- cbind(TARGET.USI = CleanedWithGenes$TARGET.USI, Risk.group = CleanedWithGenes$Risk.group, train = CleanedWithGenes$train , stringsAsFactors = FALSE, CleanedWithGenesDEG)
+
+
+
 ```
 
 
@@ -123,30 +146,141 @@ for(i in 20:4) {
 
 ```{r attaching_clusters_cleaned_data }
 GroupMatching <- KMeansReview[,c("TARGET.USI","4_k")]
+GroupMatching$KM <-  GroupMatching$`4_k`
+GroupMatching$`4_k` <- NULL
 
-PatientsWithPhenoTypeGenes <- merge(CleanedWithGenes, GroupMatching, by = "TARGET.USI", all.x = TRUE)
-
-```
-
-### Executing SVM to compare expressions among groups
-
-```{r aim1_SVM}
-
-test<- PatientsWithPhenoTypeGenes[PatientsWithPhenoTypeGenes$TARGET.USI %in% as.list(SampleTest),]
-svm()
+CleanedWithGenesKM4 <- merge(CleanedWithGenes, GroupMatching, by = "TARGET.USI", all.x = TRUE)
 
 ```
+### UNFINISHED
 
-## Aim 2 (low priority, should include in aim 1 in rewrite)
+## Aim 2
 
-Test correlation between identified AML phenotypes and Risk Groups
+Identify genes with strong associations between patient risk category and genetic eassay results using SVM
 
-## Aim 3
+```{r seanM_SVM_function}
+#The following function was developed by Sean Maden. It returns an object containing performance data on SVM models performed on both train and test data.
 
-Test for association between patient risk category and genetic eassay results
+runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
+                   testset,testclasses, weightfilt=FALSE){
+  # run SVM optimization
+  # Arguments
+  #   * seed : set seed (int) for randomization
+  #   * kerneltype : (str) type of kernel for SVM, either 'linear' or 'gaussian'
+  #   * trainset : training dataset (excluding sample classes)
+  #   * trainclasses : classes for training sampels (vector) with 1:1 correspondence 
+  #       with trainset rows
+  #   * testset : test data (data frame or matrix), excluding classes
+  #   * testclasses : classes for test samples (vector), with 1:1 row:pos correspondence
+  #   * weightfilt : (FALSE or numeric) top percentage weights to use in model 
+  #       (if FALSE, then all weights used) 
+  # Returns
+  #   * rl (list) : list containing model fitted, predictions, and performacne metrics
+  require(e1071); require(ROCR)
+  rl <- list(); str.options <- ""
+  set.seed(seed)
+  ndtr <- trainset
+  ndte <- testset
+  ndtr.classes <- trainclasses
+  ndte.classes <- testclasses
+  
+  # train svm model
+  svm_model <- svm(as.factor(ndtr.classes)~., 
+                   data=ndtr, 
+                   method="C-classification", 
+                   kernel=kerneltype)
+  weightsvect <- ndtr.weights <- t(svm_model$coefs) %*% svm_model$SV
+  if(weightfilt){
+    str.options <- c(str.options,paste0("weight filt = ",weightfilt))
+    # order training data on relative weights
+    ndtr.weightsort <- ndtr[,rev(order(abs(ndtr.weights)))]
+    # select only top proportion weights
+    nweight.col = round(ncol(ndtr.weightsort)*weightfilt,0)
+    ndtr.weightfilt <- ndtr.weightsort[,c(1:nweight.col)]
+    str.options <- c(str.options,paste("cols_retained:",colnames(ndtr.weightfilt),collapse=";"))
+    # redefine training set, rerun SVM optimization
+    ndtr <- ndtr.weightfilt
+    svm_model <- svm(as.factor(ndtr.classes)~., 
+                     data=ndtr, 
+                     method="C-classification", 
+                     kernel=kerneltype)
+  } else{
+    str.options <- c(str.options,"no weight filt")
+  }
+  pred_train <- predict(svm_model, ndtr, decision.values = TRUE)
+  pred_test <- predict(svm_model, ndte, decision.values = TRUE)
+  # get performance metrics
+  pred <- prediction(as.numeric(attr(pred_test,"decision.values")),ndte.classes)
+  perf <- performance(pred,"tpr","fpr")
+  ppred <- pred_test[pred_test==1]; 
+  tppred <- ndte.classes[pred_test==1]
+  ppred <- as.numeric(as.character(ppred))
+  testprec <- length(ppred[ppred==tppred])/length(ppred) # test precision
+  rposi <- ndte.classes==1
+  rtpred <- ndte.classes[rposi]; 
+  rppred <- pred_test[rposi]
+  rppred <- as.numeric(as.character(rppred))
+  testrec <- length(rppred[rppred==1])/length(rppred) # test recall
+  
+  # return model, pred's, and performance metrics
+  rl <- list(str.options,
+             svm_model,
+             weightsvect,
+             pred_train,
+             pred_test,
+             perf,
+             tppred,
+             testprec,
+             testrec)
+  names(rl) <- c("options_string",
+                 "svm_model",
+                 "weightsvect",
+                 "predictions_train",
+                 "predictions_test",
+                 "performance_test",
+                 "TPR_test",
+                 "precision_test",
+                 "recall_test"
+  )
+  return(rl)
+  
+}
 
-### Assumptions
+```
 
 
 ### Analysis
+
+```{r aim1_SVM}
+
+SVMDF <- GeneRiskTrain
+
+SVMDF <- SVMDF[SVMDF$Risk.group != "Unknown",]
+SVMDF[SVMDF$Risk.group == "Low",]$Risk.group <- "0"
+SVMDF[SVMDF$Risk.group == "Standard" | SVMDF$Risk.group == "High",]$Risk.group <- "1"
+SVMDF$Risk.group <- as.numeric(SVMDF$Risk.group)
+
+training <- SVMDF[SVMDF$train == 1, -c(1,2,3)]
+trainclass <- SVMDF[SVMDF$train == 1, "Risk.group"]
+
+
+testing <- SVMDF[SVMDF$train == 0, -c(1,2,3)]
+testclass <- SVMDF[SVMDF$train == 0, "Risk.group"]
+
+
+SVMResults <- runSVM(1000,"linear", training, as.factor(trainclass), testing, as.factor(testclass))
+
+colnames(SVMResults$weightsvect)
+weights <-SVMResults$weightsvect[1:1910]
+quantile(weights)
+
+
+
+
+```
+
+## Aim 3 (low priority, should include in aim 1 in rewrite)
+
+Test correlation between identified AML phenotypes and Risk Groups
+
 
