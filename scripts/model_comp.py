@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import  RandomForestClassifier, GradientBoostingClassifier
 from xgboost import XGBClassifier
 
-def model_comp(df, X_train, X_test, y_train, y_test):
+def model_comp(X_train, X_test, y_train, y_test):
     xgboost_model = XGBClassifier(learning_rate = 0.01, max_depth = 3, n_estimators = 700, random_state=8)
     gradient_boost_model = GradientBoostingClassifier(learning_rate=0.01, max_depth=4, max_features='log2', min_samples_leaf=4, n_estimators=280, subsample=0.25, random_state=8)
     random_forest_model = RandomForestClassifier(n_estimators=300, max_depth=3, verbose=1, random_state=8)
@@ -40,12 +40,15 @@ def data_prep_columns(df, var):
     Parameters
     ----------------
     df: dataframe of patients
-    var: str either 'Max' or 'Min', sets whether to take max variance or minimum variance
+    var: str either 'Max' or 'Min', sets whether to take top 1000 columns of
+    max variance or minimum variance
 
     Returns
     ----------------
-    dataframe
-    columns of either most/least variance from the two subgroups
+    df2: transformed dataframe with 'Diagostic ID' and no 'Unknown' values for risk_group
+    new column 'Low Risk' with boolean value 0 or 1; THIS COLUMN HAS ALL COLUMNS (clinical data, manifest data)
+
+    low_columns_to_take_full: columns (genes) of either most/least variance from the two subgroups
     """
     if var =='Max':
         reverse_ = True
@@ -77,6 +80,21 @@ def data_prep_columns(df, var):
     return df2, low_columns_to_take_full
 
 def model_prep(df, columns_to_take):
+    """
+
+    Parameters
+    ----------------
+    df: - takes transformed dataframe from 'data_prep_columns'
+
+    columns_to_take: - columns you want to input (can be from 'data_prep_columns')
+    or chosen in a different way
+
+    Returns
+    ----------------
+    X_train, X_test, y_train, y_test as expected from train_test_split
+
+    X: is a dataframe with only genes as columns
+    """
     data = df.iloc[:, columns_to_take]
     y = df.loc[data.index, 'Low Risk']
     data['label'] = y.copy()
@@ -87,7 +105,7 @@ def model_prep(df, columns_to_take):
     y = train['label']
 
     X_train, X_test, y_train, y_test = train_test_split(X.values, y, test_size=0.33, random_state=8)
-    return X_train, X_test, y_train, y_test, holdout
+    return X_train, X_test, y_train, y_test, holdout, X
 
 def model_prep_loc(df, columns_to_take):
     data = df.loc[:, columns_to_take]
@@ -100,7 +118,7 @@ def model_prep_loc(df, columns_to_take):
     y = train['label']
 
     X_train, X_test, y_train, y_test = train_test_split(X.values, y, test_size=0.33, random_state=8)
-    return X_train, X_test, y_train, y_test, holdout
+    return X_train, X_test, y_train, y_test, X
 
 def xgboost_tuner(X_train, X_test, y_train, y_test, n_estimators_num):
     """
@@ -150,3 +168,4 @@ def xgboost_tuner(X_train, X_test, y_train, y_test, n_estimators_num):
     print(f"XGB n_estimators: {c} log loss " + str(xgb3_ll))
     print(f"XGB n_estimators: {d} log loss " + str(xgb4_ll))
     print(f"XGB n_estimators: {e} log loss " + str(xgb5_ll))
+
