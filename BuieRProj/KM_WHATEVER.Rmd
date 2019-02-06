@@ -12,6 +12,8 @@ library(MASS)
 library(stats)
 library(useful)
 library(ggplot2)
+library(e1071)
+library(ROCR)
 ```
 
 # Background
@@ -29,15 +31,14 @@ Identfiy relationships between categories of AML and genetic assay results
 
 ```{r read_data}
 #reading a full data set of patients (these are later subsetted to patients with assays
-{
-  PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
-}
+PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
 
 #reading compiled patient data
-{
-  CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv")
-  
-}
+CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv")
+
+#reading test and train identifiers
+SampleTrain <- read.csv("./data/TARGET_AML_Training_Samples.csv")
+SampleTest <-  read.csv("./data/TARGET_AML_Testing_Samples.csv")
 ```
 
 
@@ -67,7 +68,8 @@ PatientAndPhenotypeOnly <- PatientList
                  "Year.of.Last.Follow.Up",
                  "Protocol",
                  "WBC.at.Diagnosis",
-                 "Bone.marrow.leukemic.blast.percentage....",
+            
+               "Bone.marrow.leukemic.blast.percentage....",
                  "Peripheral.blasts....",
                  "CNS.disease",
                  "Chloroma",
@@ -109,7 +111,7 @@ Notably, rather than informing phenotypes through clinical or biological knowled
 
 ```{r kmeans_clustering_analysis}
 KMeansReview <- PatientAndPhenotypeOnly
-unlink("plots/kmeans/*.jpg")
+#unlink("plots/kmeans/*.jpg")
 for(i in 20:4) {
   km.PatientPheno <- kmeans(PatientAndPhenotypeOnly[-1],i, nstart = 25)
   KMeansReview[,paste(i,"_k", sep = "")] <- km.PatientPheno$cluster
@@ -122,8 +124,18 @@ for(i in 20:4) {
 ```{r attaching_clusters_cleaned_data }
 GroupMatching <- KMeansReview[,c("TARGET.USI","4_k")]
 
+PatientsWithPhenoTypeGenes <- merge(CleanedWithGenes, GroupMatching, by = "TARGET.USI", all.x = TRUE)
+
 ```
 
+### Executing SVM to compare expressions among groups
+
+```{r aim1_SVM}
+
+test<- PatientsWithPhenoTypeGenes[PatientsWithPhenoTypeGenes$TARGET.USI %in% as.list(SampleTest),]
+svm()
+
+```
 
 ## Aim 2 (low priority, should include in aim 1 in rewrite)
 
