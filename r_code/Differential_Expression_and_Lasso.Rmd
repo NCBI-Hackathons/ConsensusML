@@ -1,5 +1,5 @@
 ---
-title: 'Normalize Counts and Merge in '
+title: 'Perform Differential Expression and Lasso Logistic Regression'
 author: "Jenny Smith"
 date: "February 4, 2018"
 output: html_document
@@ -15,7 +15,6 @@ knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
 options(stringsAsFactors = FALSE)
 ```
 
-
 ```{r message = FALSE, warning=FALSE}
 library(stringr)
 library(magrittr)
@@ -23,6 +22,8 @@ library(ggplot2)
 library(dplyr)
 library(tibble)
 library(tidyr)
+library(limma)
+library(edgeR)
 getwd()
 ```
 
@@ -37,6 +38,7 @@ dim(counts)
 ```
 
 
+
 #Use the Merged Clinical and TMMCPM 
 
 This was created by David Lee Using Python()
@@ -48,53 +50,42 @@ AML.CDE <- read.csv("Clinical_Data/AML_assay_clinical.csv", row.names = 1)
 dim(AML.CDE)
 head(AML.CDE[,1:5])
 
-getwd()
 ```
 
-```{r}
-table(AML.CDE$Diagnostic.ID)
-```
-
-```{r}
-NBL.CDE <- read.csv("Clinical_Data/NBL_assay_clinical.csv", row.names = 1)
-
-dim(NBL.CDE)
-head(NBL.CDE[,1:5])
-```
-
-```{r}
-table(NBL.CDE$Diagnostic.ID)
-```
-
-```{r}
-WT.CDE <- read.csv("Clinical_Data/WT_assay_clinical.csv", row.names = 1)
-
-dim(WT.CDE)
-head(WT.CDE[,1:5])
-```
-
-```{r}
-table(WT.CDE$Diagnostic.ID)
-```
-
-Remove Non-diagnostic samples: 04A, 40A, 02A, 06A, 11A
 
 
 #Examine and Clean Clinical Data Elements
 
-```{r}
-cols.AML <- colnames(AML.CDE) %>% grep("^ENSG", ., invert=T, value=T)
-
-# cols.AML
-
-
-```
+Remove Non-diagnostic samples: 04A, 40A, 02A, 06A, 11A
 
 ```{r}
 AML.CDE.s <- AML.CDE %>%
+  
   #filter out non-diagnostic samples for now
   filter(! grepl( "04A|40A|02A|06A|11A", Diagnostic.ID)) %>% 
+  select(-matches("^ENSG")) %>% #remove the Norm Counts - since later on these become an issue with DE analysis results 
+  
+  #clean up the levels 
   mutate_at(vars(c(45:47)), funs(gsub("NO", "No", .))) %>%
+  
+  mutate(RiskGroup.Class=case_when(
+    grepl("High|Standard", Risk.group) ~ "Yes", 
+    grepl("Low", Risk.group) ~ "No", 
+    grepl("Unknown", Risk.group) ~ "Unknown" )) %>% 
+  
+  mutate(Age.Class=ifelse(Age.at.Diagnosis.in.Days > median(Age.at.Diagnosis.in.Days), "Yes", "No")) %>%
+  
+  mutate(MLL.Update=case_when(
+    Primary.Cytogenetic.Code == "MLL" ~ "MLL", 
+    Primary.Cytogenetic.Code == "Unknown" ~ "Unknown", 
+    TRUE ~ "No")) %>%
+  
+  #Add columns for transformed numeric clinical variables
+  # mutate(Blasts.log2=, 
+  #        Age.Years=)
+  
+  #change the TARGET.USI to be identical format to the colnames in counts 
+  mutate_at(vars(TARGET.USI), funs(gsub("-", "\\.", .))) %>% 
   set_rownames(.$TARGET.USI)
 
 
@@ -107,26 +98,24 @@ head(AML.CDE.s[,1:5])
 
 #Define a Training and Testing Set 
 
-
 ```{r}
 set.seed(2019)
-AML.train <- sample(AML.CDE.s$TARGET.USI, size = nrow(AML.CDE.s)*(2/3),replace = FALSE) %>% 
-  gsub("-",".", .)
+AML.train <- sample(AML.CDE.s$TARGET.USI, size = nrow(AML.CDE.s)*(2/3),replace = FALSE) 
 
 length(AML.train)
 head(AML.train)
 
 # write.csv(AML.train, "r_code/TARGET_AML_Training_Samples.csv")
 ```
- "TARGET.20.PASFEW" "TARGET.20.PARYFN" "TARGET.20.PANSBH" "TARGET.20.PARPDS" "TARGET.20.PAEIKD"
+
+"TARGET.20.PASFEW" "TARGET.20.PARYFN" "TARGET.20.PANSBH" "TARGET.20.PARPDS" "TARGET.20.PAEIKD"
 [6] "TARGET.20.PAEFGT"
 
 ```{r}
-AML.test <- AML.CDE.s$TARGET.USI[!AML.CDE.s$TARGET.USI %in% AML.train] %>% 
-    gsub("-",".", .)
+AML.test <- AML.CDE.s$TARGET.USI[!AML.CDE.s$TARGET.USI %in% AML.train] 
 
 head(AML.test)
-length(AML.test)
+length(AML.test) #49
 
 # write.csv(AML.test, "r_code/TARGET_AML_Testing_Samples.csv")
 ```
@@ -134,20 +123,33 @@ length(AML.test)
 [1] "TARGET.20.PADYIR" "TARGET.20.PADZCG" "TARGET.20.PAEAKL" "TARGET.20.PAECCE" "TARGET.20.PAEERJ"
 [6] "TARGET.20.PAEFGR"
 
-
 ```{r}
+#update the AML dataframe with the train vs test set column for easier tracking. 
+AML.CDE.s <- AML.CDE.s %>%
+  mutate(train_test_set=ifelse(TARGET.USI %in% AML.train, "Train", "Test"))
+
+table(AML.CDE.s$train_test_set)
+```
+
+
+
 CDE.train <- AML.CDE.s %>%
-  mutate_at(vars(TARGET.USI), funs(gsub("-",".", .))) %>% 
   filter(TARGET.USI %in% AML.train) %>% 
+  
   mutate(RiskGroup.Class=case_when(
     grepl("High|Standard", Risk.group) ~ "Yes", 
     grepl("Low", Risk.group) ~ "No", 
     grepl("Unknown", Risk.group) ~ "Unknown" )) %>% 
+  
   mutate(Age.Class=ifelse(Age.at.Diagnosis.in.Days > median(Age.at.Diagnosis.in.Days), "Yes", "No")) %>%
+  
   mutate(MLL.Update=case_when(
     Primary.Cytogenetic.Code == "MLL" ~ "MLL", 
     Primary.Cytogenetic.Code == "Unknown" ~ "Unknown", 
-    TRUE ~ "No"))
+    TRUE ~ "No")) %>%
+  
+  set_rownames(.$TARGET.USI)
+
 
 dim(CDE.train)
 
@@ -155,7 +157,7 @@ table(CDE.train$Risk.group)
 table(CDE.train$RiskGroup.Class)
 table(CDE.train$Age.Class)
 table(CDE.train$MLL.Update)
-```
+
 
 ```{r}
 # lapply(CDE.train[c(15:35,45:47)], table)
@@ -173,7 +175,6 @@ Keep <- colnames(counts) %>%
 #remove end of the barcodes to match Clinical Data Rows 
 newColnames <- Keep %>%  gsub("\\.0[0-9]A.+","" ,.) 
 
-
 #Subset the raw counts for diagnostic samples and rename columns
 counts.sub <- counts[,Keep]
 colnames(counts.sub) <- newColnames
@@ -181,43 +182,52 @@ dim(counts.sub) #60,488 by 145 samples
 ```
 
 ```{r}
-#Select Training Set
+#Select Training Set counts
 counts.train <- counts.sub[,AML.train]
 
 dim(counts.train)
 ```
 
 
+```{r}
+dge <- DGEList(counts = counts.sub)
+samp <- ncol(counts.sub)
+
+#Note: used a minium # of samples as 5 to ensure that normalized values will include all DEGs identified with the training set counts. Higher thresholds lead to genes included in DEGs but excluded in the "master" TMM normalized counts. 
+keep.dge <- rowSums(cpm(dge) >= 1) >= 5
+dge <- dge[keep.dge,] #subset for those genes with cmp >= 1 per gene in AML samples
+dge <- calcNormFactors(dge) #Do TMM normalization
+
+dim(dge) #18243 genes meet these criteria in AML only
+
+cpm <- cpm(dge,log = TRUE, prior.count = 1)
+```
+ 
+
+
 #Differential Expression Analysis
-
-Split median Age (ref == young (0))
-Split on High+std vs Low (ref)
-
 
 ```{r}
 source("r_code/Limma_Voom_DE_Function.R")
 ```
 
+
 ## Risk Group DEGs
 
 ```{r}
-pheno <- CDE.train$RiskGroup.Class %>% 
-  set_names(CDE.train$TARGET.USI) %>%
-  .[.!="Unknown"]
+pheno <- AML.CDE.s %>% 
+  filter(train_test_set == "Train" & RiskGroup.Class != "Unknown") %>% 
+  select(TARGET.USI, RiskGroup.Class) 
 
-head(pheno)
-length(pheno)
+pheno <- set_names(pheno[["RiskGroup.Class"]], pheno[["TARGET.USI"]])
+  
+# head(pheno)
+# length(pheno)
 table(pheno)
 ```
 
 ```{r}
 DE.RG <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno)
-```
-
-```{r}
-DE.RG$desingMatrix[1:5,]
-table(DE.RG$desingMatrix[,1])
-dim(DE.RG$voomTransformation$E) #17445    93
 ```
 
 ```{r}
@@ -227,59 +237,27 @@ dim(DE.RG$DEGs)
 # write.csv(DE.RG$DEGs, "r_code/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv")
 ```
 
-## Age DEGs (by Median)
+##MLL 
 
 ```{r}
-pheno2 <- CDE.train$Age.Class %>% 
-  set_names(CDE.train$TARGET.USI) %>%
-  .[.!="Unknown"]
+pheno2 <- AML.CDE.s %>%
+  filter(train_test_set == "Train", MLL.Update  != "Unknown") %>%
+  select(TARGET.USI, MLL.Update)
 
-head(pheno2)
-length(pheno2)
+pheno2 <- set_names(pheno2[["MLL.Update"]], pheno2[["TARGET.USI"]])
+
 table(pheno2)
 ```
 
-
 ```{r}
-DE.Age <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno2)
+DE.MLL <- voom_DE(counts.df = counts.train, ref = "No", pheno = pheno2)
 ```
-
-```{r}
-head(DE.Age$DEGs)
-
-write.csv(DE.Age$DEGs, "r_code/TARGET_AML_Older_vs_Younger_by_MedianAge_DEGs.csv")
-```
-
-
-Deliverables
-1. notebook/script
-2. significance of findings
-
-#MLL 
-
-```{r}
-pheno3 <- CDE.train$MLL.Update %>% 
-  set_names(CDE.train$TARGET.USI) %>% 
-  .[. != "Unknown"]
-
-table(pheno3)
-```
-
-```{r}
-DE.MLL <- voom_DE(counts.df = counts.train, ref = "No", pheno = pheno3)
-```
-
 
 ```{r}
 dim(DE.MLL$DEGs) # 1575    6
 
 # write.csv(DE.MLL$DEGs, "r_code/TARGET_AML_MLL_vs_Others_DEGs.csv")
 ```
-
-```{r}
-table(CDE.train$MLL, CDE.train$Primary.Cytogenetic.Code)
-```
-
 
 
 #Lasso with DEGs
@@ -289,81 +267,212 @@ library(glmnet)
 ```
 
 ```{r}
-glm.binom <- function(x,y,df,standardize=FALSE){
+glm.binom <- function(x,y,df,ref="No", train.names=NULL, test.names=NULL, 
+                      standardize=FALSE, splitIntoTrain=FALSE){
   library(glmnet)
-  #df is the matrix with the response and  gene expression. Patietns as rownames.
-  #x is the expresion matrix, genes as rownames. 
+  #df is the matrix with the response and  gene expression. Patients as rownames.
+  #x is the character vector of column names for genes 
+  #y is the character vector of column names for the classifier 
+  #train is a chacter vector of patient IDs
+  #test is a chacter vector of Patient IDs. 
   
   response <- y
   predictors <- x
   
+  #check this that referece should be the first level in glmnet package
+  #Set-up the x and y matrices 
   y <- factor(df[,y])
+  y <- relevel(y,ref = ref)  %>% set_names(rownames(df))
   x <- as.matrix(df[,x]) #NOTE: for categorical predictors data, should use model.matrix 
   
-  if (any(is.na(y))){
+  
+  if (any(c(is.na(y), is.na(x)))) {
     print("There Are Missing Values.")
-    return(y)
-  }else if (length(levels(y)) > 2 ){
-    print("More tha two levels")
-    
-    sel <- grepl("yes|no", df[,response]) #select only the yes or no. 
-    df <- df[sel, ] #subset the df
-    
-    y <- factor(df[,response])
-    x <- as.matrix(df[,predictors])
+    return(list(x=x,y=y))
   }
   
   #Check the reference level of the response.
   contrast <- contrasts(y)
 
-  #Use validation set approach. split observations into approx. equal groups.
-  set.seed(1) #changing this, see dramaticaly changes in results. THUS NEED an outer loop for sample cross-validation.  
-  train <- sample(c(TRUE,FALSE), nrow(x), replace = TRUE)
-  test <- (!train)
+  if(splitIntoTrain){
+    #Use validation set approach. split observations into approx. equal groups.
+    set.seed(1)  
+    train <- sample(c(TRUE,FALSE), nrow(x), replace = TRUE)
+    test <- (!train)
+  
+    train.names <- rownames(df)[train]
+    test.names <- rownames(df)[test]
+  }
 
-  train.names <- rownames(df)[train]
-  test.names <- rownames(df)[test]
 
   #grid of lambda values to test.
   grid <- 10^ seq(10,-2, length=100)
-
+    
   #training model.
-  mod <- glmnet(x[train,], y[train],family = "binomial",
-                  standardize = standardize, lambda = grid, intercept = FALSE)
+  fit <- glmnet(x[train.names,], y[train.names],
+                family = "binomial",
+                alpha=1,
+                standardize = standardize, 
+                lambda = grid, 
+                intercept = FALSE)
 
   #use cross-validation on the training model.CV only for lambda
-  set.seed(1) 
-  cv.lamdba <- cv.glmnet(x[train,], y[train],family = "binomial",
-                  standardize = standardize, lambda = grid, nfolds = 5,
-                  type.measure = "deviance", intercept = FALSE)
+  set.seed(2019) 
+  cv.fit <- cv.glmnet(x[train.names,], y[train.names],
+                  family = "binomial",
+                  type.logistic="modified.Newton", 
+                  standardize = standardize,
+                  lambda = grid,
+                  alpha=1,
+                  nfolds = length(train.names), #LOOCV 
+                  type.measure = "class", 
+                  intercept = FALSE)
 
   #Select lambda min.
-  lambda.min <- cv.lamdba$lambda.min
+  lambda.min <- cv.fit$lambda.min
 
   #predict the classes
-  pred.class <- predict(mod, newx = x[test,], type="class", s=lambda.min)
+  pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
 
   #find the test error
-  tab <- table(pred.class,y[test])
-  testError <- mean(pred.class != y[test]) #how many predicted classes were incorrect
+  tab <- table(pred.class,y[test.names])
+  testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
 
   #Fit the full dataset.
   final <- glmnet(x, y,family = "binomial",
-                  standardize = standardize, lambda = grid, intercept = FALSE)
+                  standardize = standardize, 
+                  lambda = grid,
+                  alpha = 1,
+                  intercept = FALSE)
 
   #Extract the coefficients
   coef <- predict(final, type="coefficients", s=lambda.min)
   idx <- which(coef != 0)
   nonZero <- coef[idx,]
 
-  list <- list(train.names, test.names, contrast, mod, cv.lamdba,testError, final, nonZero)
-  names(list) <- c("training.set", "testing.set","contrast", "train.model",
-                   "cv.train", "test.error", "final.model", "nonzero.coef")
+  #Results 
+  list <- list(train.names, test.names, contrast, fit, cv.fit,tab,testError, final, nonZero)
+  names(list) <- c("training.set", "testing.set","contrast", "train.fit",
+                   "cv.fit", "confusionMatrix","test.error", "final.model", "nonzero.coef")
   return(list)
   
 }
 ```
 
+Will use TMM Normalized Counts and Training CDEs with only gene expression values 
+
+Note: Since I anticipated using all 3 cancer cohorts - I created the normalized dataset from all 3. 
+Ultimately I subset for AML only and used raw counts (60K genes +) for DE analysis
+So some genes in TMM counts in the AML.CDE.s were not included in the DE and vice versa. 
+
+*To address I will need to go back the original normalization step and do the norm on the 3 cohorts seperately. *
+
+
+##RiskGroup.Class
+
+
+```{r}
+RG.GLM.df <- AML.CDE.s %>%
+  select(1:84,RiskGroup.Class, train_test_set) %>% 
+  
+  inner_join(., t(cpm[rownames(DE.RG$DEGs),]) %>% 
+               as.data.frame() %>%
+               rownames_to_column("TARGET.USI"), 
+             by="TARGET.USI") %>% 
+  
+  filter(RiskGroup.Class != "Unknown") %>% 
+  set_rownames(.$TARGET.USI)
+
+dim(RG.GLM.df) #137 2084
+head(RG.GLM.df[,1:5])
+
+# table(RG.GLM.df$RiskGroup.Class, RG.GLM.df$train_test_set)
+# write.csv(RG.GLM.df, "TARGET_AML_RG_Df.csv")
+```
+
+Option grouped=FALSE enforced in cv.glmnet, since < 3 observations per fold 
+
+```{r}
+Mod.RG <- glm.binom(x=grep("^ENSG",  colnames(RG.GLM.df), value=TRUE), 
+                     y="RiskGroup.Class",
+                     df=RG.GLM.df,
+                     train.names = RG.GLM.df$TARGET.USI[RG.GLM.df$train_test_set=="Train"],
+                     test.names = RG.GLM.df$TARGET.USI[RG.GLM.df$train_test_set=="Test"])
+
+```
+
+```{r fig.height=6, fig.width=8}
+plot(Mod.RG$train.fit, xvar = "dev", label=TRUE)
+```
+
+```{r}
+# Mod.RG$cv.fit$lambda.1se #0.6579332
+# Mod.RG$cv.fit$lambda.min #0.1629751
+plot(Mod.RG$cv.fit)
+```
+
+```{r}
+Mod.RG$confusionMatrix
+Mod.RG$test.error # 0.06818182
+```
+
+```{r}
+coef <- data.frame(Mod.RG$nonzero.coef) %>%
+  rownames_to_column("Gene_ID") %>%
+  arrange(desc(Mod.RG.nonzero.coef)) %>% 
+  mutate_at(vars(Gene_ID), funs(gsub("\\.[0-9]{1,}", "", .)))
+
+coef
+
+# write.csv(coef, "TARGET_AML_Logistic_Lasso_withDEGs_RiskGroup_Associated_Genes.csv")
+```
+
+
+
+##MLL
+
+```{r}
+MLL.GLM.df <- AML.CDE.s %>%
+  select(1:84,MLL.Update, train_test_set, 
+         intersect(grep("^ENSG", colnames(.), value=T),
+                         rownames(DE.MLL$DEGs))) %>% #missing 84 DEGs .... Will re-do ASAP
+  filter(MLL.Update != "Unknown") %>% 
+  set_rownames(.$TARGET.USI)
+
+dim(MLL.GLM.df) 
+head(MLL.GLM.df[,1:5])
+```
+
+Option grouped=FALSE enforced in cv.glmnet, since < 3 observations per fold 
+
+```{r}
+Mod.MLL <- glm.binom(x=grep("^ENSG",  colnames(MLL.GLM.df), value=TRUE), 
+                     y="MLL.Update",
+                     df=MLL.GLM.df,
+                     train.names = MLL.GLM.df$TARGET.USI[MLL.GLM.df$train_test_set=="Train"],
+                     test.names = MLL.GLM.df$TARGET.USI[MLL.GLM.df$train_test_set=="Test"])
+```
+
+```{r fig.height=6, fig.width=8}
+plot(Mod.MLL$train.fit, xvar = "dev", label=TRUE) #model based on the 446 LD 0531 RNAseq data
+```
+
+```{r fig.height=4, fig.width=8}
+plot(Mod.MLL$cv.fit) #cv for lambda based on 446 LD 0531 RNAseq data
+```
+
+```{r}
+Mod.MLL$cv.fit$lambda.min#0.2848036
+Mod.MLL$cv.fit$lambda.1se #0.869749
+```
+
+```{r}
+Mod.MLL$test.error #0.1395349
+```
+
+```{r}
+Mod.MLL$nonzero.coef
+```
 
 
 
