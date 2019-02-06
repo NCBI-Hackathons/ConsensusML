@@ -1,5 +1,5 @@
 ---
-title: 'Normalize Counts and Merge in '
+title: 'Normalize Counts and Batch Effect Investigations '
 author: "Jenny Smith"
 date: "February 4, 2018"
 output: html_document
@@ -66,12 +66,6 @@ head(cpm[,1:5])
 # write.csv(cpm, "TARGET_NBL_AML_WT_RT_TMMCPM_log2_Norm_Counts.csv", row.names = TRUE)
 ```
  
-```{r}
-cpm <- read.csv("Expn_Data/TARGET_NBL_AML_RT_WT_TMMCPM_log2_Norm_Counts.csv", row.names = 1)
-
-head(cpm[,1:5])
-dim(cpm)
-```
 
 
 #Use the Merged Clinical and TMMCPM 
