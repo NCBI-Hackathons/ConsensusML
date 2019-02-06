@@ -43,11 +43,12 @@ This was created by David Lee Using Python()
 See D-V-DLee for Github 
 
 ```{r}
-AML.CDE <- read.csv("scripts/AML_assay_clinical.csv", row.names = 1) %>%
-  set_rownames(.$TARGET.USI)
+AML.CDE <- read.csv("Clinical_Data/AML_assay_clinical.csv", row.names = 1) 
 
 dim(AML.CDE)
 head(AML.CDE[,1:5])
+
+getwd()
 ```
 
 ```{r}
@@ -55,7 +56,7 @@ table(AML.CDE$Diagnostic.ID)
 ```
 
 ```{r}
-NBL.CDE <- read.csv("scripts/NBL_assay_clinical.csv", row.names = 1)
+NBL.CDE <- read.csv("Clinical_Data/NBL_assay_clinical.csv", row.names = 1)
 
 dim(NBL.CDE)
 head(NBL.CDE[,1:5])
@@ -66,7 +67,7 @@ table(NBL.CDE$Diagnostic.ID)
 ```
 
 ```{r}
-WT.CDE <- read.csv("scripts/WT_assay_clinical.csv", row.names = 1)
+WT.CDE <- read.csv("Clinical_Data/WT_assay_clinical.csv", row.names = 1)
 
 dim(WT.CDE)
 head(WT.CDE[,1:5])
@@ -86,23 +87,55 @@ cols.AML <- colnames(AML.CDE) %>% grep("^ENSG", ., invert=T, value=T)
 
 # cols.AML
 
-sapply(AML.CDE[,c(21:35,45:47)], table)
+
 ```
 
 ```{r}
-AML.CDE <- AML.CDE %>%
-  mutate_at(vars(c(45:47)), funs(gsub("NO", "No", .)))
+AML.CDE.s <- AML.CDE %>%
+  #filter out non-diagnostic samples for now
+  filter(! grepl( "04A|40A|02A|06A|11A", Diagnostic.ID)) %>% 
+  mutate_at(vars(c(45:47)), funs(gsub("NO", "No", .))) %>%
+  set_rownames(.$TARGET.USI)
+
+
+dim(AML.CDE.s)
+head(AML.CDE.s[,1:5])
 ```
 
 
 
 
-#Differential Expression Analysis
+#Define a Training and Testing Set 
 
 
 ```{r}
-source("r_code/Limma_Voom_DE_Function.R")
+set.seed(2019)
+AML.train <- sample(AML.CDE.s$TARGET.USI, size = nrow(AML.CDE.s)*(2/3),replace = FALSE)
+
+length(AML.train)
+head(AML.train)
+
+# write.csv(AML.train, "r_code/TARGET_AML_Training_Samples.csv")
 ```
+
+
+```{r}
+AML.test <- AML.CDE.s$TARGET.USI[!AML.CDE.s$TARGET.USI %in% AML.train]
+
+head(AML.test)
+length(AML.test)
+
+write.csv(AML.test, "r_code/TARGET_AML_Testing_Samples.csv")
+```
+
+```{r}
+sapply(AML.CDE.s[,c(21:35,45:47)], table)
+```
+
+Split median Age (ref == young (0))
+Split on High+std vs Low (ref)
+
+
 
 ```{r}
 #remove any patient samples that are not diagnositic
@@ -120,10 +153,24 @@ dim(counts.sub) #60,488 by 407 samples
 ```
 
 
+
+
+#Differential Expression Analysis
+
+
 ```{r}
-pheno <- AML.CDE$WT1.mutation %>%
+source("r_code/Limma_Voom_DE_Function.R")
+```
+
+
+```{r}
+#There are duplicate 
+pheno <- AML.CDE$WT1.mutation %>% 
   set_names(gsub("-",".",AML.CDE$TARGET.USI)) %>% 
   .[.!="Unknown"]
+
+
+pheno <- 
 
 head(pheno)
 length(pheno)
@@ -136,7 +183,19 @@ DE.WT1 <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno)
 ```
 
 
+```{r}
+DE.WT1$desingMatrix[1:5,]
 
+table(DE.WT1$desingMatrix[,1])
+```
+
+
+
+
+
+Deliverables
+1. notebook/script
+2. significance of findings
 
 
 
