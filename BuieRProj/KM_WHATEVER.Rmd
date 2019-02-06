@@ -1,9 +1,12 @@
 ---
-title: "R Notebook"
+title: "Use of K-means and SVM in ML for Detection of Genetic Association with Risk in Cases of AML"
+author: "Ronald W Buie"
 output: html_notebook
 ---
 
 ```{r setup}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+
 library(xlsx)
 library(MASS)
 library(stats)
@@ -11,19 +14,44 @@ library(useful)
 library(ggplot2)
 ```
 
-# Aim
-
-Identfiy relationships between categories of AML and genetic assay results
-
 # Background
 
 Acute Myeloid Leukemia is a cancer affecting blood stem cells. Onset is sudden and affected cells can outcompete normal cells, resulted in complications and death. AML has multiple variants. Unlike staging used in many cancers AML affected cells are typed as part of treatment. These types serve to identify phenotypes of expression of the disease. Treatment is similar to other cancerns, involving radiation and chemotherapy. Relapse affects 50% of cases.
+
+# Data
+
+Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients. 
+
+## Aim #1
+
+Identfiy relationships between categories of AML and genetic assay results
+
 
 ```{r read_data}
 #reading a full data set of patients (these are later subsetted to patients with assays
 {
   PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
-  PatientAndPhenotypeOnly <- PatientList
+}
+
+#reading compiled patient data
+{
+  CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv")
+  
+}
+```
+
+
+
+### Analysis
+
+Our analysis took two phases, grouping of cellular classifications into phenotypes, and identification of differences in genetic assay results between phenotypes.
+
+#### Assumptions
+
+Where phenotyping information were not available, we assumed the observation to be "not there" instead of NA. This was to 
+
+```{r preparing_aim1_data}
+PatientAndPhenotypeOnly <- PatientList
   
   # removing non mutation phenotyping information from DF
   PatientAndPhenotypeOnly[,c("Gender","Race",
@@ -70,29 +98,10 @@ Acute Myeloid Leukemia is a cancer affecting blood stem cells. Onset is sudden a
   PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Yes"| PatientAndPhenotypeOnly == "YES"] <- 1
   
   PatientAndPhenotypeOnly[-1] <- lapply(PatientAndPhenotypeOnly[-1], as.numeric)
-
-}
-
-#reading compiled patient data
-{
-  CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv")
-  
-}
 ```
 
-# Data
 
-Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients.
-
-## Assumptions
-
-Where phenotyping information were not available, we assumed the observation to be "not there" instead of NA. This was to 
-
-# Analysis
-
-Our analysis took two phases, grouping of cellular classifications into phenotypes, and identification of differences in genetic assay results between phenotypes.
-
-## Identifying Phenotypes: K-means
+### Identifying Phenotypes: K-means
 
 Data from all 993 patients were used to identify phenotypes. Patients had a variety of tests for cell mutation typing, including positive and negatives. However, all patients also had NA values across some tests. This aligns with clinical practice where a provider focuses on testing for certain types and, once an optimal course of treatment is identified, has no need to further specify the types of mutation. Because a step of clinical expertise was involved, we decided to identify all NA values has 0 (not found), under the assumption that, more likely than not, something not tested for was not expected by the expert. 
 
@@ -113,10 +122,19 @@ for(i in 20:4) {
 ```{r attaching_clusters_cleaned_data }
 GroupMatching <- KMeansReview[,c("TARGET.USI","4_k")]
 
-Clea
-
-
 ```
 
 
+## Aim 2 (low priority, should include in aim 1 in rewrite)
+
+Test correlation between identified AML phenotypes and Risk Groups
+
+## Aim 3
+
+Test for association between patient risk category and genetic eassay results
+
+### Assumptions
+
+
+### Analysis
 
