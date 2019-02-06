@@ -1,0 +1,195 @@
+Gene stable ID	Gene stable ID version	Gene name	Gene description	Phenotype description
+ENSG00000005381	ENSG00000005381.7	MPO	myeloperoxidase [Source:HGNC Symbol;Acc:HGNC:7218]	Alzheimer disease
+ENSG00000005381	ENSG00000005381.7	MPO	myeloperoxidase [Source:HGNC Symbol;Acc:HGNC:7218]	MYELOPEROXIDASE DEFICIENCY
+ENSG00000008988	ENSG00000008988.9	RPS20	ribosomal protein S20 [Source:HGNC Symbol;Acc:HGNC:10405]	Familial colorectal cancer Type X
+ENSG00000019582	ENSG00000019582.14	CD74	CD74 molecule [Source:HGNC Symbol;Acc:HGNC:1697]	
+ENSG00000044574	ENSG00000044574.7	HSPA5	heat shock protein family A (Hsp70) member 5 [Source:HGNC Symbol;Acc:HGNC:5238]	
+ENSG00000070756	ENSG00000070756.15	PABPC1	poly(A) binding protein cytoplasmic 1 [Source:HGNC Symbol;Acc:HGNC:8554]	
+ENSG00000075624	ENSG00000075624.14	ACTB	actin beta [Source:HGNC Symbol;Acc:HGNC:132]	BARAITSER-WINTER SYNDROME 1
+ENSG00000075624	ENSG00000075624.14	ACTB	actin beta [Source:HGNC Symbol;Acc:HGNC:132]	DYSTONIA JUVENILE-ONSET
+ENSG00000075624	ENSG00000075624.14	ACTB	actin beta [Source:HGNC Symbol;Acc:HGNC:132]	ACTB Haploinsufficiency syndtome
+ENSG00000075624	ENSG00000075624.14	ACTB	actin beta [Source:HGNC Symbol;Acc:HGNC:132]	Baraitser-Winter syndrome
+ENSG00000075624	ENSG00000075624.14	ACTB	actin beta [Source:HGNC Symbol;Acc:HGNC:132]	Baraitser-Winter cerebrofrontofacial syndrome
+ENSG00000075624	ENSG00000075624.14	ACTB	actin beta [Source:HGNC Symbol;Acc:HGNC:132]	Becker nevus syndrome
+ENSG00000075624	ENSG00000075624.14	ACTB	actin beta [Source:HGNC Symbol;Acc:HGNC:132]	Developmental malformations-deafness-dystonia syndrome
+ENSG00000087086	ENSG00000087086.14	FTL	ferritin light chain [Source:HGNC Symbol;Acc:HGNC:3999]	HYPERFERRITINEMIA WITH OR WITHOUT CATARACT
+ENSG00000087086	ENSG00000087086.14	FTL	ferritin light chain [Source:HGNC Symbol;Acc:HGNC:3999]	L-FERRITIN DEFICIENCY
+ENSG00000087086	ENSG00000087086.14	FTL	ferritin light chain [Source:HGNC Symbol;Acc:HGNC:3999]	NEURODEGENERATION WITH BRAIN IRON ACCUMULATION 3
+ENSG00000087086	ENSG00000087086.14	FTL	ferritin light chain [Source:HGNC Symbol;Acc:HGNC:3999]	HEREDITARY HYPERFERRITINEMIA-CATARACT SYNDROME
+ENSG00000087086	ENSG00000087086.14	FTL	ferritin light chain [Source:HGNC Symbol;Acc:HGNC:3999]	Genetic hyperferritinemia without iron overload
+ENSG00000087086	ENSG00000087086.14	FTL	ferritin light chain [Source:HGNC Symbol;Acc:HGNC:3999]	Neuroferritinopathy
+ENSG00000100097	ENSG00000100097.11	LGALS1	galectin 1 [Source:HGNC Symbol;Acc:HGNC:6561]	
+ENSG00000100316	ENSG00000100316.15	RPL3	ribosomal protein L3 [Source:HGNC Symbol;Acc:HGNC:10332]	
+ENSG00000105372	ENSG00000105372.7	RPS19	ribosomal protein S19 [Source:HGNC Symbol;Acc:HGNC:10402]	DIAMOND-BLACKFAN ANEMIA 1
+ENSG00000105372	ENSG00000105372.7	RPS19	ribosomal protein S19 [Source:HGNC Symbol;Acc:HGNC:10402]	RPS19-Related Diamond-Blackfan Anemia
+ENSG00000105372	ENSG00000105372.7	RPS19	ribosomal protein S19 [Source:HGNC Symbol;Acc:HGNC:10402]	Blackfan-Diamond anemia
+ENSG00000108107	ENSG00000108107.14	RPL28	ribosomal protein L28 [Source:HGNC Symbol;Acc:HGNC:10330]	
+ENSG00000108518	ENSG00000108518.7	PFN1	profilin 1 [Source:HGNC Symbol;Acc:HGNC:8881]	AMYOTROPHIC LATERAL SCLEROSIS 18
+ENSG00000108518	ENSG00000108518.7	PFN1	profilin 1 [Source:HGNC Symbol;Acc:HGNC:8881]	Amyotrophic lateral sclerosis
+ENSG00000111640	ENSG00000111640.14	GAPDH	glyceraldehyde-3-phosphate dehydrogenase [Source:HGNC Symbol;Acc:HGNC:4141]	
+ENSG00000112306	ENSG00000112306.7	RPS12	ribosomal protein S12 [Source:HGNC Symbol;Acc:HGNC:10385]	
+ENSG00000120129	ENSG00000120129.5	DUSP1	dual specificity phosphatase 1 [Source:HGNC Symbol;Acc:HGNC:3064]	
+ENSG00000122862	ENSG00000122862.4	SRGN	serglycin [Source:HGNC Symbol;Acc:HGNC:9361]	
+ENSG00000128016	ENSG00000128016.5	ZFP36	ZFP36 ring finger protein [Source:HGNC Symbol;Acc:HGNC:12862]	
+ENSG00000134419	ENSG00000134419.15	RPS15A	ribosomal protein S15a [Source:HGNC Symbol;Acc:HGNC:10389]	
+ENSG00000137154	ENSG00000137154.12	RPS6	ribosomal protein S6 [Source:HGNC Symbol;Acc:HGNC:10429]	
+ENSG00000138326	ENSG00000138326.19	RPS24	ribosomal protein S24 [Source:HGNC Symbol;Acc:HGNC:10411]	DIAMOND-BLACKFAN ANEMIA 3
+ENSG00000138326	ENSG00000138326.19	RPS24	ribosomal protein S24 [Source:HGNC Symbol;Acc:HGNC:10411]	Blackfan-Diamond anemia
+ENSG00000142534	ENSG00000142534.6	RPS11	ribosomal protein S11 [Source:HGNC Symbol;Acc:HGNC:10384]	
+ENSG00000142541	ENSG00000142541.16	RPL13A	ribosomal protein L13a [Source:HGNC Symbol;Acc:HGNC:10304]	
+ENSG00000142669	ENSG00000142669.14	SH3BGRL3	SH3 domain binding glutamate rich protein like 3 [Source:HGNC Symbol;Acc:HGNC:15568]	
+ENSG00000145425	ENSG00000145425.9	RPS3A	ribosomal protein S3A [Source:HGNC Symbol;Acc:HGNC:10421]	
+ENSG00000156508	ENSG00000156508.17	EEF1A1	eukaryotic translation elongation factor 1 alpha 1 [Source:HGNC Symbol;Acc:HGNC:3189]	
+ENSG00000162244	ENSG00000162244.11	RPL29	ribosomal protein L29 [Source:HGNC Symbol;Acc:HGNC:10331]	
+ENSG00000162511	ENSG00000162511.7	LAPTM5	lysosomal protein transmembrane 5 [Source:HGNC Symbol;Acc:HGNC:29612]	
+ENSG00000163682	ENSG00000163682.16	RPL9	ribosomal protein L9 [Source:HGNC Symbol;Acc:HGNC:10369]	
+ENSG00000166441	ENSG00000166441.12	RPL27A	ribosomal protein L27a [Source:HGNC Symbol;Acc:HGNC:10329]	
+ENSG00000166710	ENSG00000166710.18	B2M	beta-2-microglobulin [Source:HGNC Symbol;Acc:HGNC:914]	AMYLOIDOSIS FAMILIAL VISCERAL
+ENSG00000166710	ENSG00000166710.18	B2M	beta-2-microglobulin [Source:HGNC Symbol;Acc:HGNC:914]	IMMUNODEFICIENCY 43
+ENSG00000166710	ENSG00000166710.18	B2M	beta-2-microglobulin [Source:HGNC Symbol;Acc:HGNC:914]	Immunodeficiency by defective expression of HLA class 1
+ENSG00000166710	ENSG00000166710.18	B2M	beta-2-microglobulin [Source:HGNC Symbol;Acc:HGNC:914]	Variant ABeta2M amyloidosis
+ENSG00000167658	ENSG00000167658.15	EEF2	eukaryotic translation elongation factor 2 [Source:HGNC Symbol;Acc:HGNC:3214]	SPINOCEREBELLAR ATAXIA 26
+ENSG00000167658	ENSG00000167658.15	EEF2	eukaryotic translation elongation factor 2 [Source:HGNC Symbol;Acc:HGNC:3214]	Spinocerebellar ataxia type 26
+ENSG00000167996	ENSG00000167996.15	FTH1	ferritin heavy chain 1 [Source:HGNC Symbol;Acc:HGNC:3976]	HEMOCHROMATOSIS TYPE 5
+ENSG00000167996	ENSG00000167996.15	FTH1	ferritin heavy chain 1 [Source:HGNC Symbol;Acc:HGNC:3976]	FTH1-related iron overload
+ENSG00000169429	ENSG00000169429.10	CXCL8	C-X-C motif chemokine ligand 8 [Source:HGNC Symbol;Acc:HGNC:6025]	
+ENSG00000170345	ENSG00000170345.9	FOS	Fos proto-oncogene, AP-1 transcription factor subunit [Source:HGNC Symbol;Acc:HGNC:3796]	Berardinelli-Seip congenital lipodystrophy
+ENSG00000172232	ENSG00000172232.9	AZU1	azurocidin 1 [Source:HGNC Symbol;Acc:HGNC:913]	
+ENSG00000172757	ENSG00000172757.12	CFL1	cofilin 1 [Source:HGNC Symbol;Acc:HGNC:1874]	
+ENSG00000173812	ENSG00000173812.10	EIF1	eukaryotic translation initiation factor 1 [Source:HGNC Symbol;Acc:HGNC:3249]	
+ENSG00000174444	ENSG00000174444.14	RPL4	ribosomal protein L4 [Source:HGNC Symbol;Acc:HGNC:10353]	
+ENSG00000177954	ENSG00000177954.12	RPS27	ribosomal protein S27 [Source:HGNC Symbol;Acc:HGNC:10416]	DIAMOND-BLACKFAN ANEMIA 17
+ENSG00000177954	ENSG00000177954.12	RPS27	ribosomal protein S27 [Source:HGNC Symbol;Acc:HGNC:10416]	Blackfan-Diamond anemia
+ENSG00000182774	ENSG00000182774.12	RPS17	ribosomal protein S17 [Source:HGNC Symbol;Acc:HGNC:10397]	DIAMOND-BLACKFAN ANEMIA 4
+ENSG00000182774	ENSG00000182774.12	RPS17	ribosomal protein S17 [Source:HGNC Symbol;Acc:HGNC:10397]	Blackfan-Diamond anemia
+ENSG00000184009	ENSG00000184009.11	ACTG1	actin gamma 1 [Source:HGNC Symbol;Acc:HGNC:144]	Baraitser-Winter Syndrome 2
+ENSG00000184009	ENSG00000184009.11	ACTG1	actin gamma 1 [Source:HGNC Symbol;Acc:HGNC:144]	DEAFNESS AUTOSOMAL DOMINANT 20
+ENSG00000184009	ENSG00000184009.11	ACTG1	actin gamma 1 [Source:HGNC Symbol;Acc:HGNC:144]	Baraitser-Winter syndrome
+ENSG00000184009	ENSG00000184009.11	ACTG1	actin gamma 1 [Source:HGNC Symbol;Acc:HGNC:144]	Autosomal dominant non-syndromic sensorineural deafness type DFNA
+ENSG00000184009	ENSG00000184009.11	ACTG1	actin gamma 1 [Source:HGNC Symbol;Acc:HGNC:144]	Baraitser-Winter cerebrofrontofacial syndrome
+ENSG00000184009	ENSG00000184009.11	ACTG1	actin gamma 1 [Source:HGNC Symbol;Acc:HGNC:144]	Coloboma of choroid and retina
+ENSG00000184009	ENSG00000184009.11	ACTG1	actin gamma 1 [Source:HGNC Symbol;Acc:HGNC:144]	Coloboma of iris
+ENSG00000184897	ENSG00000184897.5	H1FX	H1 histone family member X [Source:HGNC Symbol;Acc:HGNC:4722]	
+ENSG00000187514	ENSG00000187514.16	PTMA	prothymosin alpha [Source:HGNC Symbol;Acc:HGNC:9623]	
+ENSG00000188536	ENSG00000188536.13	HBA2	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	ALPHA-THALASSEMIA
+ENSG00000188536	ENSG00000188536.13	HBA2	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	ERYTHROCYTOSIS FAMILIAL 7
+ENSG00000188536	ENSG00000188536.13	HBA2	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	HEINZ BODY ANEMIAS
+ENSG00000188536	ENSG00000188536.13	HBA2	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	HEMOGLOBIN H DISEASE
+ENSG00000188536	ENSG00000188536.13	HBA2	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Alpha-thalassemia - intellectual disability syndrome linked to chromosome 16
+ENSG00000188536	ENSG00000188536.13	HBA2	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Hb Bart's Hydrops Fetalis
+ENSG00000188536	ENSG00000188536.13	HBA2	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Hemoglobin M disease
+ENSG00000197561	ENSG00000197561.6	ELANE	elastase, neutrophil expressed [Source:HGNC Symbol;Acc:HGNC:3309]	CYCLIC NEUTROPENIA
+ENSG00000197561	ENSG00000197561.6	ELANE	elastase, neutrophil expressed [Source:HGNC Symbol;Acc:HGNC:3309]	NEUTROPENIA SEVERE CONGENITAL 1 AUTOSOMAL DOMINANT
+ENSG00000197561	ENSG00000197561.6	ELANE	elastase, neutrophil expressed [Source:HGNC Symbol;Acc:HGNC:3309]	Autosomal dominant severe congenital neutropenia
+ENSG00000197728	ENSG00000197728.11	RPS26	ribosomal protein S26 [Source:HGNC Symbol;Acc:HGNC:10414]	DIAMOND-BLACKFAN ANEMIA 10
+ENSG00000197728	ENSG00000197728.11	RPS26	ribosomal protein S26 [Source:HGNC Symbol;Acc:HGNC:10414]	Blackfan-Diamond anemia
+ENSG00000197756	ENSG00000197756.9	RPL37A	ribosomal protein L37a [Source:HGNC Symbol;Acc:HGNC:10348]	
+ENSG00000197958	ENSG00000197958.12	RPL12	ribosomal protein L12 [Source:HGNC Symbol;Acc:HGNC:10302]	
+ENSG00000198034	ENSG00000198034.10	RPS4X	ribosomal protein S4 X-linked [Source:HGNC Symbol;Acc:HGNC:10424]	
+ENSG00000198695	ENSG00000198695.2	MT-ND6	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 6 [Source:HGNC Symbol;Acc:HGNC:7462]	LEBER OPTIC ATROPHY
+ENSG00000198695	ENSG00000198695.2	MT-ND6	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 6 [Source:HGNC Symbol;Acc:HGNC:7462]	MITOCHONDRIAL MYOPATHY ENCEPHALOPATHY LACTIC ACIDOSIS AND STROKE-LIKE EPISODES
+ENSG00000198695	ENSG00000198695.2	MT-ND6	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 6 [Source:HGNC Symbol;Acc:HGNC:7462]	Leber hereditary optic neuropathy
+ENSG00000198695	ENSG00000198695.2	MT-ND6	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 6 [Source:HGNC Symbol;Acc:HGNC:7462]	Leber plus disease
+ENSG00000198695	ENSG00000198695.2	MT-ND6	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 6 [Source:HGNC Symbol;Acc:HGNC:7462]	MELAS
+ENSG00000198695	ENSG00000198695.2	MT-ND6	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 6 [Source:HGNC Symbol;Acc:HGNC:7462]	Maternally-inherited Leigh syndrome
+ENSG00000198727	ENSG00000198727.2	MT-CYB	mitochondrially encoded cytochrome b [Source:HGNC Symbol;Acc:HGNC:7427]	LEBER OPTIC ATROPHY
+ENSG00000198727	ENSG00000198727.2	MT-CYB	mitochondrially encoded cytochrome b [Source:HGNC Symbol;Acc:HGNC:7427]	MITOCHONDRIAL MYOPATHY ENCEPHALOPATHY LACTIC ACIDOSIS AND STROKE-LIKE EPISODES
+ENSG00000198727	ENSG00000198727.2	MT-CYB	mitochondrially encoded cytochrome b [Source:HGNC Symbol;Acc:HGNC:7427]	Histiocytoid cardiomyopathy
+ENSG00000198727	ENSG00000198727.2	MT-CYB	mitochondrially encoded cytochrome b [Source:HGNC Symbol;Acc:HGNC:7427]	Isolated complex III deficiency
+ENSG00000198727	ENSG00000198727.2	MT-CYB	mitochondrially encoded cytochrome b [Source:HGNC Symbol;Acc:HGNC:7427]	Leber hereditary optic neuropathy
+ENSG00000198763	ENSG00000198763.3	MT-ND2	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 2 [Source:HGNC Symbol;Acc:HGNC:7456]	LEBER OPTIC ATROPHY
+ENSG00000198763	ENSG00000198763.3	MT-ND2	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 2 [Source:HGNC Symbol;Acc:HGNC:7456]	Isolated complex I deficiency
+ENSG00000198763	ENSG00000198763.3	MT-ND2	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 2 [Source:HGNC Symbol;Acc:HGNC:7456]	Leber hereditary optic neuropathy
+ENSG00000198763	ENSG00000198763.3	MT-ND2	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 2 [Source:HGNC Symbol;Acc:HGNC:7456]	Maternally-inherited Leigh syndrome
+ENSG00000198786	ENSG00000198786.2	MT-ND5	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 5 [Source:HGNC Symbol;Acc:HGNC:7461]	LEBER OPTIC ATROPHY
+ENSG00000198786	ENSG00000198786.2	MT-ND5	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 5 [Source:HGNC Symbol;Acc:HGNC:7461]	MITOCHONDRIAL MYOPATHY ENCEPHALOPATHY LACTIC ACIDOSIS AND STROKE-LIKE EPISODES
+ENSG00000198786	ENSG00000198786.2	MT-ND5	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 5 [Source:HGNC Symbol;Acc:HGNC:7461]	Leber hereditary optic neuropathy
+ENSG00000198786	ENSG00000198786.2	MT-ND5	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 5 [Source:HGNC Symbol;Acc:HGNC:7461]	MELAS
+ENSG00000198786	ENSG00000198786.2	MT-ND5	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 5 [Source:HGNC Symbol;Acc:HGNC:7461]	MERRF
+ENSG00000198786	ENSG00000198786.2	MT-ND5	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 5 [Source:HGNC Symbol;Acc:HGNC:7461]	Maternally-inherited Leigh syndrome
+ENSG00000198804	ENSG00000198804.2	MT-CO1	mitochondrially encoded cytochrome c oxidase I [Source:HGNC Symbol;Acc:HGNC:7419]	Deafness nonsyndromic sensorineural mitochondrial
+ENSG00000198804	ENSG00000198804.2	MT-CO1	mitochondrially encoded cytochrome c oxidase I [Source:HGNC Symbol;Acc:HGNC:7419]	MITOCHONDRIAL MYOPATHY ENCEPHALOPATHY LACTIC ACIDOSIS AND STROKE-LIKE EPISODES
+ENSG00000198804	ENSG00000198804.2	MT-CO1	mitochondrially encoded cytochrome c oxidase I [Source:HGNC Symbol;Acc:HGNC:7419]	Genetic recurrent myoglobinuria
+ENSG00000198804	ENSG00000198804.2	MT-CO1	mitochondrially encoded cytochrome c oxidase I [Source:HGNC Symbol;Acc:HGNC:7419]	Isolated cytochrome C oxidase deficiency
+ENSG00000198804	ENSG00000198804.2	MT-CO1	mitochondrially encoded cytochrome c oxidase I [Source:HGNC Symbol;Acc:HGNC:7419]	Leber hereditary optic neuropathy
+ENSG00000198804	ENSG00000198804.2	MT-CO1	mitochondrially encoded cytochrome c oxidase I [Source:HGNC Symbol;Acc:HGNC:7419]	MELAS
+ENSG00000198804	ENSG00000198804.2	MT-CO1	mitochondrially encoded cytochrome c oxidase I [Source:HGNC Symbol;Acc:HGNC:7419]	Mitochondrial non-syndromic sensorineural deafness
+ENSG00000198804	ENSG00000198804.2	MT-CO1	mitochondrially encoded cytochrome c oxidase I [Source:HGNC Symbol;Acc:HGNC:7419]	Mitochondrial nonsyndromic sensorineural deafness with susceptibility to aminoglycoside exposure
+ENSG00000198840	ENSG00000198840.2	MT-ND3	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 3 [Source:HGNC Symbol;Acc:HGNC:7458]	Isolated complex I deficiency
+ENSG00000198840	ENSG00000198840.2	MT-ND3	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 3 [Source:HGNC Symbol;Acc:HGNC:7458]	Leber plus disease
+ENSG00000198840	ENSG00000198840.2	MT-ND3	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 3 [Source:HGNC Symbol;Acc:HGNC:7458]	Maternally-inherited Leigh syndrome
+ENSG00000198886	ENSG00000198886.2	MT-ND4	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 4 [Source:HGNC Symbol;Acc:HGNC:7459]	LEBER OPTIC ATROPHY
+ENSG00000198886	ENSG00000198886.2	MT-ND4	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 4 [Source:HGNC Symbol;Acc:HGNC:7459]	Leber hereditary optic neuropathy
+ENSG00000198886	ENSG00000198886.2	MT-ND4	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 4 [Source:HGNC Symbol;Acc:HGNC:7459]	Leber plus disease
+ENSG00000198886	ENSG00000198886.2	MT-ND4	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 4 [Source:HGNC Symbol;Acc:HGNC:7459]	MELAS
+ENSG00000198886	ENSG00000198886.2	MT-ND4	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 4 [Source:HGNC Symbol;Acc:HGNC:7459]	Maternally-inherited Leigh syndrome
+ENSG00000198886	ENSG00000198886.2	MT-ND4	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 4 [Source:HGNC Symbol;Acc:HGNC:7459]	Mitochondrial nonsyndromic sensorineural deafness with susceptibility to aminoglycoside exposure
+ENSG00000198888	ENSG00000198888.2	MT-ND1	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 1 [Source:HGNC Symbol;Acc:HGNC:7455]	LEBER OPTIC ATROPHY
+ENSG00000198888	ENSG00000198888.2	MT-ND1	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 1 [Source:HGNC Symbol;Acc:HGNC:7455]	MITOCHONDRIAL MYOPATHY ENCEPHALOPATHY LACTIC ACIDOSIS AND STROKE-LIKE EPISODES
+ENSG00000198888	ENSG00000198888.2	MT-ND1	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 1 [Source:HGNC Symbol;Acc:HGNC:7455]	Isolated complex I deficiency
+ENSG00000198888	ENSG00000198888.2	MT-ND1	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 1 [Source:HGNC Symbol;Acc:HGNC:7455]	Leber hereditary optic neuropathy
+ENSG00000198888	ENSG00000198888.2	MT-ND1	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 1 [Source:HGNC Symbol;Acc:HGNC:7455]	MELAS
+ENSG00000198888	ENSG00000198888.2	MT-ND1	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 1 [Source:HGNC Symbol;Acc:HGNC:7455]	Maternally-inherited Leigh syndrome
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	LEBER OPTIC ATROPHY
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	NEUROPATHY ATAXIA AND RETINITIS PIGMENTOSA
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	Familial infantile bilateral striatal necrosis
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	Isolated ATP synthase deficiency
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	Leber hereditary optic neuropathy
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	MT-ATP6-related mitochondrial spastic paraplegia
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	Maternally-inherited Leigh syndrome
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	NARP syndrome
+ENSG00000198899	ENSG00000198899.2	MT-ATP6	mitochondrially encoded ATP synthase membrane subunit 6 [Source:HGNC Symbol;Acc:HGNC:7414]	Periodic paralysis with later-onset distal motor neuropathy
+ENSG00000198938	ENSG00000198938.2	MT-CO3	mitochondrially encoded cytochrome c oxidase III [Source:HGNC Symbol;Acc:HGNC:7422]	LEBER OPTIC ATROPHY
+ENSG00000198938	ENSG00000198938.2	MT-CO3	mitochondrially encoded cytochrome c oxidase III [Source:HGNC Symbol;Acc:HGNC:7422]	MITOCHONDRIAL MYOPATHY ENCEPHALOPATHY LACTIC ACIDOSIS AND STROKE-LIKE EPISODES
+ENSG00000198938	ENSG00000198938.2	MT-CO3	mitochondrially encoded cytochrome c oxidase III [Source:HGNC Symbol;Acc:HGNC:7422]	Genetic recurrent myoglobinuria
+ENSG00000198938	ENSG00000198938.2	MT-CO3	mitochondrially encoded cytochrome c oxidase III [Source:HGNC Symbol;Acc:HGNC:7422]	Isolated cytochrome C oxidase deficiency
+ENSG00000198938	ENSG00000198938.2	MT-CO3	mitochondrially encoded cytochrome c oxidase III [Source:HGNC Symbol;Acc:HGNC:7422]	Leber hereditary optic neuropathy
+ENSG00000198938	ENSG00000198938.2	MT-CO3	mitochondrially encoded cytochrome c oxidase III [Source:HGNC Symbol;Acc:HGNC:7422]	MELAS
+ENSG00000204287	ENSG00000204287.13	HLA-DRA	major histocompatibility complex, class II, DR alpha [Source:HGNC Symbol;Acc:HGNC:4947]	Graham Little-Piccardi-Lassueur syndrome
+ENSG00000205542	ENSG00000205542.10	TMSB4X	thymosin beta 4 X-linked [Source:HGNC Symbol;Acc:HGNC:11881]	
+ENSG00000210082	ENSG00000210082.2	MT-RNR2	mitochondrially encoded 16S RNA [Source:HGNC Symbol;Acc:HGNC:7471]	
+ENSG00000212907	ENSG00000212907.2	MT-ND4L	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 4L [Source:HGNC Symbol;Acc:HGNC:7460]	LEBER OPTIC ATROPHY
+ENSG00000212907	ENSG00000212907.2	MT-ND4L	mitochondrially encoded NADH:ubiquinone oxidoreductase core subunit 4L [Source:HGNC Symbol;Acc:HGNC:7460]	Leber hereditary optic neuropathy
+ENSG00000228253	ENSG00000228253.1	MT-ATP8	mitochondrially encoded ATP synthase membrane subunit 8 [Source:HGNC Symbol;Acc:HGNC:7415]	Isolated ATP synthase deficiency
+ENSG00000228253	ENSG00000228253.1	MT-ATP8	mitochondrially encoded ATP synthase membrane subunit 8 [Source:HGNC Symbol;Acc:HGNC:7415]	KEARNS-SAYRE SYNDROME
+ENSG00000228253	ENSG00000228253.1	MT-ATP8	mitochondrially encoded ATP synthase membrane subunit 8 [Source:HGNC Symbol;Acc:HGNC:7415]	Periodic paralysis with later-onset distal motor neuropathy
+ENSG00000231500	ENSG00000231500.6	RPS18	ribosomal protein S18 [Source:HGNC Symbol;Acc:HGNC:10401]	
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	SEVERE CUTANEOUS ADVERSE REACTION SUSCEPTIBILITY TO TOXIC EPIDERMAL NECROLYSIS SUSCEPTIBILITY TO INCLUDED
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	SPONDYLOARTHROPATHY SUSCEPTIBILITY TO 1
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	Abacavir toxicity
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	Allopurinol toxicity
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	Behcet's disease
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	Flucloxacilline toxicity
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	Phenytoin or carbamazepine toxicity
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	Pulmonary arterial hypertension associated with connective tissue disease
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	Stevens-Johnson syndrome
+ENSG00000234745	ENSG00000234745.10	HLA-B	major histocompatibility complex, class I, B [Source:HGNC Symbol;Acc:HGNC:4932]	Takayasu arteritis
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	ALPHA-THALASSEMIA
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA DOMINANT INCLUSION BODY TYPE
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	ERYTHROCYTOSIS FAMILIAL 6
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	FETAL HEMOGLOBIN QUANTITATIVE TRAIT LOCUS 1
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	HEINZ BODY ANEMIAS
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	MALARIA SUSCEPTIBILITY TO MALARIA RESISTANCE TO INCLUDED
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	METHEMOGLOBINEMIA BETA TYPE
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	SICKLE CELL ANEMIA
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA INTERMEDIA
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Beta-thalassemia major
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Delta-beta thalassemia
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Dominant beta-thalassemia
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Heinz body anemia
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin C disease
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin C-beta-thalassemia syndrome
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin D disease
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin E disease
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin E-beta-thalassemia syndrome
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin Lepore-beta-thalassemia syndrome
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin M disease
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hereditary persistence of fetal hemoglobin-beta-thalassemia syndrome
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hereditary persistence of fetal hemoglobin-sickle cell disease syndrome
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-beta-thalassemia disease syndrome
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin C disease syndrome
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin D disease syndrome
+ENSG00000244734	ENSG00000244734.4	HBB	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin E disease syndrome
+ENSG00000248527	ENSG00000248527.1	MTATP6P1	MT-ATP6 pseudogene 1 [Source:HGNC Symbol;Acc:HGNC:44575]	
+ENSG00000251562	ENSG00000251562.8	MALAT1	metastasis associated lung adenocarcinoma transcript 1 [Source:HGNC Symbol;Acc:HGNC:29665]	
