@@ -1,0 +1,87 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup}
+library(xlsx)
+library(MASS)
+library(stats)
+library(useful)
+library(ggplot2)
+```
+
+
+```{r read_data}
+#reading a full data set of patients (these are later subsetted to patients with assays
+PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
+PatientAndPhenotypeOnly <- PatientList
+PatientAndPhenotypeOnly[,c("Gender","Race",
+                           "Ethnicity",
+                           "Age.at.Diagnosis.in.Days",
+                           "First.Event",
+                           
+
+                "Event.Free.Survival.Time.in.Days",  
+               "Vital.Status",
+               "Overall.Survival.Time.in.Days",
+               "Year.of.Diagnosis",
+               "Year.of.Last.Follow.Up",
+               "Protocol",
+               "WBC.at.Diagnosis",
+               "Bone.marrow.leukemic.blast.percentage....",
+               "Peripheral.blasts....",
+               "CNS.disease",
+               "Chloroma",
+               "FAB.Category",
+               "Cytogenetic.Code.Other",
+               "Cytogenetic.Complexity",
+               "Primary.Cytogenetic.Code",
+               "ISCN",
+               "MRD.at.end.of.course.1",
+               "MRD...at.end.of.course.1",
+               "MRD.at.end.of.course.2",
+               "MRD...at.end.of.course.2",
+               "CR.status.at.end.of.course.1" ,
+               "CR.status.at.end.of.course.2" ,
+               "Risk.group",
+               "SCT.in.1st.CR",
+               "Bone.Marrow.Site.of.Relapse.Induction.Failure",
+               "CNS.Site.of.Relapse.Induction.Failure" ,
+               "Chloroma.Site.of.Relapse.Induction.Failure",
+               "Cytogenetic.Site.of.Relapse.Induction.Failure",
+               "Other.Site.of.Relapse.Induction.Failure",
+               "Comment",
+               "Refractory.Timepoint.sent.for.Induction.Failure.Project")] <- NULL
+
+PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Unknown" | PatientAndPhenotypeOnly == "N/A" | PatientAndPhenotypeOnly == "Not done"] <- 0
+
+PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "No" |PatientAndPhenotypeOnly == "NO" ] <- 0
+PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Yes"| PatientAndPhenotypeOnly == "YES"] <- 1
+
+PatientAndPhenotypeOnly[-1] <- lapply(PatientAndPhenotypeOnly[-1], as.numeric)
+
+```
+
+
+```{r kmeans_clustering_analysis}
+KMeansReview <- PatientAndPhenotypeOnly
+unlink("plots/kmeans/*.jpg")
+for(i in 20:4) {
+  km.PatientPheno <- kmeans(PatientAndPhenotypeOnly[-1],i, nstart = 25)
+  KMeansReview[,paste(i,"_k", sep = "")] <- km.PatientPheno$cluster
+  plot(km.PatientPheno)+ggsave(paste("plots/kmeans/",i,".jpg", sep = ""))
+
+}
+
+```
+Observing charts of nearness of clustering we see a tendancy for groups to be clustered into 4, even at high (k=20) values. We will identify patients as 1 of 4 clusters for phenotyping genetic traits.
+
+```{r attaching_clusters_cleaned_data }
+GroupMatching <- KMeansReview[,c("TARGET.USI","4_k")]
+
+
+```
+
+
+
