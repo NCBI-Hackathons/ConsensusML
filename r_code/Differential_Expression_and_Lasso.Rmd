@@ -142,12 +142,14 @@ CDE.train <- AML.CDE.s %>%
   mutate(RiskGroup.Class=case_when(
     grepl("High|Standard", Risk.group) ~ "Yes", 
     grepl("Low", Risk.group) ~ "No", 
-    grepl("Unknown", Risk.group) ~ "Unknown" ))
+    grepl("Unknown", Risk.group) ~ "Unknown" )) %>% 
+  mutate(Age.Class=ifelse(Age.at.Diagnosis.in.Days > median(Age.at.Diagnosis.in.Days), "Yes", "No"))
 
 dim(CDE.train)
 
 table(CDE.train$Risk.group)
 table(CDE.train$RiskGroup.Class)
+table(CDE.train$Age.Class)
 ```
 
 
@@ -180,7 +182,6 @@ dim(counts.train)
 
 
 
-
 #Differential Expression Analysis
 
 Split median Age (ref == young (0))
@@ -190,7 +191,6 @@ Split on High+std vs Low (ref)
 ```{r}
 source("r_code/Limma_Voom_DE_Function.R")
 ```
-
 
 ```{r}
 pheno <- CDE.train$RiskGroup.Class %>% 
@@ -221,21 +221,54 @@ CDE.train %>%
  
 ```
 
-
 ```{r}
 head(DE.RG$DEGs)
 dim(DE.RG$DEGs)
 
-
-write.csv(DE.RG$DEGs, "r_code/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv")
+# write.csv(DE.RG$DEGs, "r_code/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv")
 ```
 
 
+```{r}
+pheno2 <- CDE.train$Age.Class %>% 
+  set_names(CDE.train$TARGET.USI) %>%
+  .[.!="Unknown"]
+
+head(pheno2)
+length(pheno2)
+table(pheno2)
+```
+
+
+```{r}
+DE.Age <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno2)
+```
+
+
+```{r}
+head(DE.Age$DEGs)
+
+write.csv(DE.Age$DEGs, "r_code/TARGET_AML_Older_vs_Younger_by_MedianAge_DEGs.csv")
+```
 
 
 Deliverables
 1. notebook/script
 2. significance of findings
+
+
+#Lasso with DEGs
+
+There is not too much class imbalance on either 
+
+```{r}
+ 
+```
+
+
+
+
+
 
 
 
