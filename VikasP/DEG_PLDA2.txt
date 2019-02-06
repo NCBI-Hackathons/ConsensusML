@@ -1,0 +1,235 @@
+Gene stable ID	Gene description	Phenotype description	Gene name
+ENSG00000002586	CD99 molecule (Xg blood group) [Source:HGNC Symbol;Acc:HGNC:7082]		CD99
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	BLOOD GROUP--DIEGO SYSTEM	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	BLOOD GROUP--FROESE	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	BLOOD GROUP--SWANN SYSTEM	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	BLOOD GROUP--WALDNER TYPE	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	BLOOD GROUP--WRIGHT ANTIGEN	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	CRYOHYDROCYTOSIS	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	MALARIA SUSCEPTIBILITY TO MALARIA RESISTANCE TO INCLUDED	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	OVALOCYTOSIS SOUTHEAST ASIAN	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	RENAL TUBULAR ACIDOSIS DISTAL AUTOSOMAL DOMINANT	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	RENAL TUBULAR ACIDOSIS DISTAL WITH HEMOLYTIC ANEMIA	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	SPHEROCYTOSIS TYPE 4	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	Renal tubular acidosis distal AD	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	Renal tubular acidosis distal AR	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	Autosomal dominant distal renal tubular acidosis	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	Dehydrated hereditary stomatocytosis	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	Distal renal tubular acidosis with anemia	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	Hereditary cryohydrocytosis with normal stomatin	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	Hereditary spherocytosis	SLC4A1
+ENSG00000004939	solute carrier family 4 member 1 (Diego blood group) [Source:HGNC Symbol;Acc:HGNC:11027]	Southeast Asian ovalocytosis	SLC4A1
+ENSG00000005249	protein kinase cAMP-dependent type II regulatory subunit beta [Source:HGNC Symbol;Acc:HGNC:9392]		PRKAR2B
+ENSG00000005381	myeloperoxidase [Source:HGNC Symbol;Acc:HGNC:7218]	Alzheimer disease	MPO
+ENSG00000005381	myeloperoxidase [Source:HGNC Symbol;Acc:HGNC:7218]	MYELOPEROXIDASE DEFICIENCY	MPO
+ENSG00000005961	integrin subunit alpha 2b [Source:HGNC Symbol;Acc:HGNC:6138]	BLEEDING DISORDER PLATELET-TYPE 16	ITGA2B
+ENSG00000005961	integrin subunit alpha 2b [Source:HGNC Symbol;Acc:HGNC:6138]	GLANZMANN THROMBASTHENIA	ITGA2B
+ENSG00000005961	integrin subunit alpha 2b [Source:HGNC Symbol;Acc:HGNC:6138]	Autosomal dominant macrothrombocytopenia	ITGA2B
+ENSG00000005961	integrin subunit alpha 2b [Source:HGNC Symbol;Acc:HGNC:6138]	Fetal and neonatal alloimmune thrombocytopenia	ITGA2B
+ENSG00000008394	microsomal glutathione S-transferase 1 [Source:HGNC Symbol;Acc:HGNC:7061]		MGST1
+ENSG00000010610	CD4 molecule [Source:HGNC Symbol;Acc:HGNC:1678]	OKT4 EPITOPE DEFICIENCY	CD4
+ENSG00000019582	CD74 molecule [Source:HGNC Symbol;Acc:HGNC:1697]		CD74
+ENSG00000020633	runt related transcription factor 3 [Source:HGNC Symbol;Acc:HGNC:10473]		RUNX3
+ENSG00000026508	CD44 molecule (Indian blood group) [Source:HGNC Symbol;Acc:HGNC:1681]	BLOOD GROUP INDIAN SYSTEM	CD44
+ENSG00000059804	solute carrier family 2 member 3 [Source:HGNC Symbol;Acc:HGNC:11007]	HUNTINGTON DISEASE	SLC2A3
+ENSG00000067082	Kruppel like factor 6 [Source:HGNC Symbol;Acc:HGNC:2235]	GASTRIC CANCER GASTRIC CANCER INTESTINAL INCLUDED	KLF6
+ENSG00000067082	Kruppel like factor 6 [Source:HGNC Symbol;Acc:HGNC:2235]	Prostate Cancer	KLF6
+ENSG00000078399	homeobox A9 [Source:HGNC Symbol;Acc:HGNC:5109]		HOXA9
+ENSG00000078596	integral membrane protein 2A [Source:HGNC Symbol;Acc:HGNC:6173]		ITM2A
+ENSG00000086730	linker for activation of T cells family member 2 [Source:HGNC Symbol;Acc:HGNC:12749]		LAT2
+ENSG00000100448	cathepsin G [Source:HGNC Symbol;Acc:HGNC:2532]		CTSG
+ENSG00000100906	NFKB inhibitor alpha [Source:HGNC Symbol;Acc:HGNC:7797]	ECTODERMAL DYSPLASIA ANHIDROTIC WITH T-CELL IMMUNODEFICIENCY AUTOSOMAL DOMINANT	NFKBIA
+ENSG00000100906	NFKB inhibitor alpha [Source:HGNC Symbol;Acc:HGNC:7797]	Giant cell glioblastoma	NFKBIA
+ENSG00000100906	NFKB inhibitor alpha [Source:HGNC Symbol;Acc:HGNC:7797]	Gliosarcoma	NFKBIA
+ENSG00000100906	NFKB inhibitor alpha [Source:HGNC Symbol;Acc:HGNC:7797]	Hypohidrotic ectodermal dysplasia with immunodeficiency	NFKBIA
+ENSG00000100906	NFKB inhibitor alpha [Source:HGNC Symbol;Acc:HGNC:7797]	NASOPHARYNGEAL CARCINOMA	NFKBIA
+ENSG00000102760	regulator of cell cycle [Source:HGNC Symbol;Acc:HGNC:20369]		RGCC
+ENSG00000102804	TSC22 domain family member 1 [Source:HGNC Symbol;Acc:HGNC:16826]		TSC22D1
+ENSG00000102854	mesothelin [Source:HGNC Symbol;Acc:HGNC:7371]		MSLN
+ENSG00000105270	CAP-Gly domain containing linker protein 3 [Source:HGNC Symbol;Acc:HGNC:24314]		CLIP3
+ENSG00000106484	mesoderm specific transcript [Source:HGNC Symbol;Acc:HGNC:7028]		MEST
+ENSG00000108679	galectin 3 binding protein [Source:HGNC Symbol;Acc:HGNC:6564]		LGALS3BP
+ENSG00000109062	SLC9A3 regulator 1 [Source:HGNC Symbol;Acc:HGNC:11075]	NEPHROLITHIASIS/OSTEOPOROSIS HYPOPHOSPHATEMIC 2	SLC9A3R1
+ENSG00000109062	SLC9A3 regulator 1 [Source:HGNC Symbol;Acc:HGNC:11075]	Dominant hypophosphatemia with nephrolithiasis or osteoporosis	SLC9A3R1
+ENSG00000109321	amphiregulin [Source:HGNC Symbol;Acc:HGNC:651]		AREG
+ENSG00000109787	Kruppel like factor 3 [Source:HGNC Symbol;Acc:HGNC:16516]		KLF3
+ENSG00000111371	solute carrier family 38 member 1 [Source:HGNC Symbol;Acc:HGNC:13447]		SLC38A1
+ENSG00000111885	mannosidase alpha class 1A member 1 [Source:HGNC Symbol;Acc:HGNC:6821]		MAN1A1
+ENSG00000112077	Rh associated glycoprotein [Source:HGNC Symbol;Acc:HGNC:10006]	Overhydrated hereditary stomatocytosis	RHAG
+ENSG00000112077	Rh associated glycoprotein [Source:HGNC Symbol;Acc:HGNC:10006]	RH-NULL REGULATOR TYPE	RHAG
+ENSG00000112077	Rh associated glycoprotein [Source:HGNC Symbol;Acc:HGNC:10006]	Rh deficiency syndrome	RHAG
+ENSG00000112149	CD83 molecule [Source:HGNC Symbol;Acc:HGNC:1703]		CD83
+ENSG00000113140	secreted protein acidic and cysteine rich [Source:HGNC Symbol;Acc:HGNC:11219]	OSTEOGENESIS IMPERFECTA TYPE XVII	SPARC
+ENSG00000113140	secreted protein acidic and cysteine rich [Source:HGNC Symbol;Acc:HGNC:11219]	Osteogenesis imperfecta type 4	SPARC
+ENSG00000118971	cyclin D2 [Source:HGNC Symbol;Acc:HGNC:1583]	Megalencephaly-polymicrogyria-polydactyly-hydrocephalus syndrome 3	CCND2
+ENSG00000118971	cyclin D2 [Source:HGNC Symbol;Acc:HGNC:1583]	MEGALENCEPHALY-POLYMICROGYRIA-POLYDACTYLY-HYDROCEPHALUS SYNDROME	CCND2
+ENSG00000118971	cyclin D2 [Source:HGNC Symbol;Acc:HGNC:1583]	Megalencephaly-polymicrogyria-postaxial polydactyly-hydrocephalus syndrome	CCND2
+ENSG00000118985	elongation factor for RNA polymerase II 2 [Source:HGNC Symbol;Acc:HGNC:17064]		ELL2
+ENSG00000119535	colony stimulating factor 3 receptor [Source:HGNC Symbol;Acc:HGNC:2439]	Neutropenia severe congenital 7 autosomal recessive	CSF3R
+ENSG00000119535	colony stimulating factor 3 receptor [Source:HGNC Symbol;Acc:HGNC:2439]	NEUTROPHILIA HEREDITARY	CSF3R
+ENSG00000119535	colony stimulating factor 3 receptor [Source:HGNC Symbol;Acc:HGNC:2439]	Atypical chronic myeloid leukemia	CSF3R
+ENSG00000119535	colony stimulating factor 3 receptor [Source:HGNC Symbol;Acc:HGNC:2439]	Autosomal recessive severe congenital neutropenia due to CSF3R deficiency	CSF3R
+ENSG00000119535	colony stimulating factor 3 receptor [Source:HGNC Symbol;Acc:HGNC:2439]	Chronic neutrophilic leukemia	CSF3R
+ENSG00000119535	colony stimulating factor 3 receptor [Source:HGNC Symbol;Acc:HGNC:2439]	Hereditary neutrophilia	CSF3R
+ENSG00000120833	suppressor of cytokine signaling 2 [Source:HGNC Symbol;Acc:HGNC:19382]		SOCS2
+ENSG00000123358	nuclear receptor subfamily 4 group A member 1 [Source:HGNC Symbol;Acc:HGNC:7980]		NR4A1
+ENSG00000124491	coagulation factor XIII A chain [Source:HGNC Symbol;Acc:HGNC:3531]	FACTOR XIII A SUBUNIT DEFICIENCY OF	F13A1
+ENSG00000124491	coagulation factor XIII A chain [Source:HGNC Symbol;Acc:HGNC:3531]	MYOCARDIAL INFARCTION SUSCEPTIBILITY TO MYOCARDIAL INFARCTION SUSCEPTIBILITY TO 1 INCLUDED	F13A1
+ENSG00000124491	coagulation factor XIII A chain [Source:HGNC Symbol;Acc:HGNC:3531]	THROMBOPHILIA DUE TO THROMBIN DEFECT	F13A1
+ENSG00000124491	coagulation factor XIII A chain [Source:HGNC Symbol;Acc:HGNC:3531]	Congenital factor XIII deficiency	F13A1
+ENSG00000124762	cyclin dependent kinase inhibitor 1A [Source:HGNC Symbol;Acc:HGNC:1784]	Multiple endocrine neoplasia type 1	CDKN1A
+ENSG00000124882	epiregulin [Source:HGNC Symbol;Acc:HGNC:3443]		EREG
+ENSG00000125538	interleukin 1 beta [Source:HGNC Symbol;Acc:HGNC:5992]	GASTRIC CANCER HEREDITARY DIFFUSE	IL1B
+ENSG00000125869	lysosomal associated membrane protein family member 5 [Source:HGNC Symbol;Acc:HGNC:16097]		LAMP5
+ENSG00000126264	hematopoietic cell signal transducer [Source:HGNC Symbol;Acc:HGNC:16977]		HCST
+ENSG00000127528	Kruppel like factor 2 [Source:HGNC Symbol;Acc:HGNC:6347]		KLF2
+ENSG00000128016	ZFP36 ring finger protein [Source:HGNC Symbol;Acc:HGNC:12862]		ZFP36
+ENSG00000130529	transient receptor potential cation channel subfamily M member 4 [Source:HGNC Symbol;Acc:HGNC:17993]	PROGRESSIVE FAMILIAL HEART BLOCK TYPE IB	TRPM4
+ENSG00000130529	transient receptor potential cation channel subfamily M member 4 [Source:HGNC Symbol;Acc:HGNC:17993]	Brugada syndrome	TRPM4
+ENSG00000130529	transient receptor potential cation channel subfamily M member 4 [Source:HGNC Symbol;Acc:HGNC:17993]	Familial progressive cardiac conduction defect	TRPM4
+ENSG00000133246	PML-RARA regulated adaptor molecule 1 [Source:HGNC Symbol;Acc:HGNC:30091]		PRAM1
+ENSG00000133742	carbonic anhydrase 1 [Source:HGNC Symbol;Acc:HGNC:1368]		CA1
+ENSG00000134531	epithelial membrane protein 1 [Source:HGNC Symbol;Acc:HGNC:3333]		EMP1
+ENSG00000135046	annexin A1 [Source:HGNC Symbol;Acc:HGNC:533]		ANXA1
+ENSG00000135916	integral membrane protein 2C [Source:HGNC Symbol;Acc:HGNC:6175]		ITM2C
+ENSG00000136732	glycophorin C (Gerbich blood group) [Source:HGNC Symbol;Acc:HGNC:4704]	Blood group gerbich system	GYPC
+ENSG00000136732	glycophorin C (Gerbich blood group) [Source:HGNC Symbol;Acc:HGNC:4704]	MALARIA SUSCEPTIBILITY TO MALARIA RESISTANCE TO INCLUDED	GYPC
+ENSG00000136732	glycophorin C (Gerbich blood group) [Source:HGNC Symbol;Acc:HGNC:4704]	Hereditary elliptocytosis	GYPC
+ENSG00000139318	dual specificity phosphatase 6 [Source:HGNC Symbol;Acc:HGNC:3072]	Hypogonadotropic hypogonadism 19 with or without anosmia	DUSP6
+ENSG00000139318	dual specificity phosphatase 6 [Source:HGNC Symbol;Acc:HGNC:3072]	Hypogonadotropic hypogonadism 7 with or without anosmia	DUSP6
+ENSG00000139318	dual specificity phosphatase 6 [Source:HGNC Symbol;Acc:HGNC:3072]	Kallmann Syndrome	DUSP6
+ENSG00000139318	dual specificity phosphatase 6 [Source:HGNC Symbol;Acc:HGNC:3072]	Normosmic congenital hypogonadotropic hypogonadism	DUSP6
+ENSG00000142089	interferon induced transmembrane protein 3 [Source:HGNC Symbol;Acc:HGNC:5414]	INFLUENZA SEVERE SUSCEPTIBILITY TO	IFITM3
+ENSG00000143878	ras homolog family member B [Source:HGNC Symbol;Acc:HGNC:668]		RHOB
+ENSG00000144655	cysteine and serine rich nuclear protein 1 [Source:HGNC Symbol;Acc:HGNC:14300]		CSRNP1
+ENSG00000147872	perilipin 2 [Source:HGNC Symbol;Acc:HGNC:248]		PLIN2
+ENSG00000158578	5'-aminolevulinate synthase 2 [Source:HGNC Symbol;Acc:HGNC:397]	ANEMIA SIDEROBLASTIC 1	ALAS2
+ENSG00000158578	5'-aminolevulinate synthase 2 [Source:HGNC Symbol;Acc:HGNC:397]	PROTOPORPHYRIA ERYTHROPOIETIC X-LINKED	ALAS2
+ENSG00000158578	5'-aminolevulinate synthase 2 [Source:HGNC Symbol;Acc:HGNC:397]	X-linked erythropoietic protoporphyria	ALAS2
+ENSG00000158578	5'-aminolevulinate synthase 2 [Source:HGNC Symbol;Acc:HGNC:397]	X-linked sideroblastic anemia	ALAS2
+ENSG00000162772	activating transcription factor 3 [Source:HGNC Symbol;Acc:HGNC:785]		ATF3
+ENSG00000163751	carboxypeptidase A3 [Source:HGNC Symbol;Acc:HGNC:2298]		CPA3
+ENSG00000164741	DLC1 Rho GTPase activating protein [Source:HGNC Symbol;Acc:HGNC:2897]	Colorectal Cancer	DLC1
+ENSG00000166825	alanyl aminopeptidase, membrane [Source:HGNC Symbol;Acc:HGNC:500]		ANPEP
+ENSG00000167173	chromosome 15 open reading frame 39 [Source:HGNC Symbol;Acc:HGNC:24497]		C15orf39
+ENSG00000169184	MN1 proto-oncogene, transcriptional regulator [Source:HGNC Symbol;Acc:HGNC:7180]	MENINGIOMA FAMILIAL SUSCEPTIBILITY TO	MN1
+ENSG00000169184	MN1 proto-oncogene, transcriptional regulator [Source:HGNC Symbol;Acc:HGNC:7180]	Familial multiple meningioma	MN1
+ENSG00000169429	C-X-C motif chemokine ligand 8 [Source:HGNC Symbol;Acc:HGNC:6025]		CXCL8
+ENSG00000169442	CD52 molecule [Source:HGNC Symbol;Acc:HGNC:1804]		CD52
+ENSG00000169641	leucine zipper protein 1 [Source:HGNC Symbol;Acc:HGNC:14985]		LUZP1
+ENSG00000169877	alpha hemoglobin stabilizing protein [Source:HGNC Symbol;Acc:HGNC:18075]		AHSP
+ENSG00000170893	thyrotropin releasing hormone [Source:HGNC Symbol;Acc:HGNC:12298]	THYROTROPIN-RELEASING HORMONE DEFICIENCY	TRH
+ENSG00000170893	thyrotropin releasing hormone [Source:HGNC Symbol;Acc:HGNC:12298]	Isolated thyrotropin-releasing hormone deficiency	TRH
+ENSG00000171223	JunB proto-oncogene, AP-1 transcription factor subunit [Source:HGNC Symbol;Acc:HGNC:6205]		JUNB
+ENSG00000172236	tryptase alpha/beta 1 [Source:HGNC Symbol;Acc:HGNC:12019]		TPSAB1
+ENSG00000172247	C1q and TNF related 4 [Source:HGNC Symbol;Acc:HGNC:14346]		C1QTNF4
+ENSG00000173801	junction plakoglobin [Source:HGNC Symbol;Acc:HGNC:6207]	ARRHYTHMOGENIC RIGHT VENTRICULAR DYSPLASIA FAMILIAL 12	JUP
+ENSG00000173801	junction plakoglobin [Source:HGNC Symbol;Acc:HGNC:6207]	NAXOS DISEASE	JUP
+ENSG00000173801	junction plakoglobin [Source:HGNC Symbol;Acc:HGNC:6207]	Familial isolated arrhythmogenic ventricular dysplasia biventricular form	JUP
+ENSG00000173801	junction plakoglobin [Source:HGNC Symbol;Acc:HGNC:6207]	Familial isolated arrhythmogenic ventricular dysplasia left dominant form	JUP
+ENSG00000173801	junction plakoglobin [Source:HGNC Symbol;Acc:HGNC:6207]	Familial isolated arrhythmogenic ventricular dysplasia right dominant form	JUP
+ENSG00000173801	junction plakoglobin [Source:HGNC Symbol;Acc:HGNC:6207]	Lethal acantholytic epidermolysis bullosa	JUP
+ENSG00000174059	CD34 molecule [Source:HGNC Symbol;Acc:HGNC:1662]		CD34
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	CELIAC DISEASE SUSCEPTIBILITY TO 1	HLA-DQB1
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	CREUTZFELDT-JAKOB DISEASE	HLA-DQB1
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	MULTIPLE SCLEROSIS SUSCEPTIBILITY TO	HLA-DQB1
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	Bullous pemphigoid	HLA-DQB1
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	Idiopathic achalasia	HLA-DQB1
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	Limbic encephalitis with LGI1 antibodies	HLA-DQB1
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	Narcolepsy type 1	HLA-DQB1
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	Narcolepsy type 2	HLA-DQB1
+ENSG00000179344	major histocompatibility complex, class II, DQ beta 1 [Source:HGNC Symbol;Acc:HGNC:4944]	Pediatric multiple sclerosis	HLA-DQB1
+ENSG00000179348	GATA binding protein 2 [Source:HGNC Symbol;Acc:HGNC:4171]	IMMUNODEFICIENCY 21	GATA2
+ENSG00000179348	GATA binding protein 2 [Source:HGNC Symbol;Acc:HGNC:4171]	LEUKEMIA ACUTE MYELOID	GATA2
+ENSG00000179348	GATA binding protein 2 [Source:HGNC Symbol;Acc:HGNC:4171]	LYMPHEDEMA PRIMARY WITH MYELODYSPLASIA	GATA2
+ENSG00000179348	GATA binding protein 2 [Source:HGNC Symbol;Acc:HGNC:4171]	MYELODYSPLASTIC SYNDROME	GATA2
+ENSG00000179348	GATA binding protein 2 [Source:HGNC Symbol;Acc:HGNC:4171]	Emberger syndrome	GATA2
+ENSG00000179348	GATA binding protein 2 [Source:HGNC Symbol;Acc:HGNC:4171]	Deafness-lymphedema-leukemia syndrome	GATA2
+ENSG00000179348	GATA binding protein 2 [Source:HGNC Symbol;Acc:HGNC:4171]	Inherited acute myeloid leukemia	GATA2
+ENSG00000179348	GATA binding protein 2 [Source:HGNC Symbol;Acc:HGNC:4171]	Monocytopenia with susceptibility to infections	GATA2
+ENSG00000182718	annexin A2 [Source:HGNC Symbol;Acc:HGNC:537]		ANXA2
+ENSG00000184588	phosphodiesterase 4B [Source:HGNC Symbol;Acc:HGNC:8781]		PDE4B
+ENSG00000184678	histone cluster 2 H2B family member e [Source:HGNC Symbol;Acc:HGNC:4760]		HIST2H2BE
+ENSG00000185022	MAF bZIP transcription factor F [Source:HGNC Symbol;Acc:HGNC:6780]		MAFF
+ENSG00000185198	serine protease 57 [Source:HGNC Symbol;Acc:HGNC:31397]		PRSS57
+ENSG00000187837	histone cluster 1 H1 family member c [Source:HGNC Symbol;Acc:HGNC:4716]		HIST1H1C
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	ALPHA-THALASSEMIA	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	ERYTHROCYTOSIS FAMILIAL 7	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	HEINZ BODY ANEMIAS	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	HEMOGLOBIN H DISEASE	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Alpha-thalassemia - intellectual disability syndrome linked to chromosome 16	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Hb Bart's Hydrops Fetalis	HBA2
+ENSG00000188536	hemoglobin subunit alpha 2 [Source:HGNC Symbol;Acc:HGNC:4824]	Hemoglobin M disease	HBA2
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	MULTIPLE SCLEROSIS SUSCEPTIBILITY TO	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Rheumatoid arthritis	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	SARCOIDOSIS SUSCEPTIBILITY TO 1	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Bullous pemphigoid	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Diffuse cutaneous systemic sclerosis	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Follicular lymphoma	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Limbic encephalitis with LGI1 antibodies	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Limited cutaneous systemic sclerosis	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Limited systemic sclerosis	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Narcolepsy type 1	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Narcolepsy type 2	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Pediatric multiple sclerosis	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Sarcoidosis	HLA-DRB1
+ENSG00000196126	major histocompatibility complex, class II, DR beta 1 [Source:HGNC Symbol;Acc:HGNC:4948]	Systemic-onset juvenile idiopathic arthritis	HLA-DRB1
+ENSG00000196735	major histocompatibility complex, class II, DQ alpha 1 [Source:HGNC Symbol;Acc:HGNC:4942]	CELIAC DISEASE SUSCEPTIBILITY TO 1	HLA-DQA1
+ENSG00000196735	major histocompatibility complex, class II, DQ alpha 1 [Source:HGNC Symbol;Acc:HGNC:4942]	Adult-onset myasthenia gravis	HLA-DQA1
+ENSG00000196735	major histocompatibility complex, class II, DQ alpha 1 [Source:HGNC Symbol;Acc:HGNC:4942]	Idiopathic achalasia	HLA-DQA1
+ENSG00000197249	serpin family A member 1 [Source:HGNC Symbol;Acc:HGNC:8941]	ALPHA-1-ANTITRYPSIN DEFICIENCY	SERPINA1
+ENSG00000197249	serpin family A member 1 [Source:HGNC Symbol;Acc:HGNC:8941]	PULMONARY DISEASE CHRONIC OBSTRUCTIVE	SERPINA1
+ENSG00000197249	serpin family A member 1 [Source:HGNC Symbol;Acc:HGNC:8941]	Hemorrhagic disease due to alpha-1-antitrypsin Pittsburgh mutation	SERPINA1
+ENSG00000197253	tryptase beta 2 (gene/pseudogene) [Source:HGNC Symbol;Acc:HGNC:14120]		TPSB2
+ENSG00000197561	elastase, neutrophil expressed [Source:HGNC Symbol;Acc:HGNC:3309]	CYCLIC NEUTROPENIA	ELANE
+ENSG00000197561	elastase, neutrophil expressed [Source:HGNC Symbol;Acc:HGNC:3309]	NEUTROPENIA SEVERE CONGENITAL 1 AUTOSOMAL DOMINANT	ELANE
+ENSG00000197561	elastase, neutrophil expressed [Source:HGNC Symbol;Acc:HGNC:3309]	Autosomal dominant severe congenital neutropenia	ELANE
+ENSG00000197747	S100 calcium binding protein A10 [Source:HGNC Symbol;Acc:HGNC:10487]		S100A10
+ENSG00000197766	complement factor D [Source:HGNC Symbol;Acc:HGNC:2771]	COMPLEMENT FACTOR D DEFICIENCY	CFD
+ENSG00000197766	complement factor D [Source:HGNC Symbol;Acc:HGNC:2771]	Recurrent Neisseria infections due to factor D deficiency	CFD
+ENSG00000198355	Pim-3 proto-oncogene, serine/threonine kinase [Source:HGNC Symbol;Acc:HGNC:19310]		PIM3
+ENSG00000198502	major histocompatibility complex, class II, DR beta 5 [Source:HGNC Symbol;Acc:HGNC:4953]		HLA-DRB5
+ENSG00000204257	major histocompatibility complex, class II, DM alpha [Source:HGNC Symbol;Acc:HGNC:4934]		HLA-DMA
+ENSG00000204287	major histocompatibility complex, class II, DR alpha [Source:HGNC Symbol;Acc:HGNC:4947]	Graham Little-Piccardi-Lassueur syndrome	HLA-DRA
+ENSG00000206172	hemoglobin subunit alpha 1 [Source:HGNC Symbol;Acc:HGNC:4823]	ALPHA-THALASSEMIA	HBA1
+ENSG00000206172	hemoglobin subunit alpha 1 [Source:HGNC Symbol;Acc:HGNC:4823]	ERYTHROCYTOSIS FAMILIAL 7	HBA1
+ENSG00000206172	hemoglobin subunit alpha 1 [Source:HGNC Symbol;Acc:HGNC:4823]	HEINZ BODY ANEMIAS	HBA1
+ENSG00000206172	hemoglobin subunit alpha 1 [Source:HGNC Symbol;Acc:HGNC:4823]	HEMOGLOBIN H DISEASE	HBA1
+ENSG00000206172	hemoglobin subunit alpha 1 [Source:HGNC Symbol;Acc:HGNC:4823]	METHEMOGLOBINEMIA ALPHA TYPE	HBA1
+ENSG00000206172	hemoglobin subunit alpha 1 [Source:HGNC Symbol;Acc:HGNC:4823]	Alpha-thalassemia - intellectual disability syndrome linked to chromosome 16	HBA1
+ENSG00000206172	hemoglobin subunit alpha 1 [Source:HGNC Symbol;Acc:HGNC:4823]	Hb Bart's Hydrops Fetalis	HBA1
+ENSG00000206172	hemoglobin subunit alpha 1 [Source:HGNC Symbol;Acc:HGNC:4823]	Hemoglobin M disease	HBA1
+ENSG00000221869	CCAAT enhancer binding protein delta [Source:HGNC Symbol;Acc:HGNC:1835]		CEBPD
+ENSG00000223609	hemoglobin subunit delta [Source:HGNC Symbol;Acc:HGNC:4829]	Delta-beta thalassemia	HBD
+ENSG00000223609	hemoglobin subunit delta [Source:HGNC Symbol;Acc:HGNC:4829]	Hemoglobin Lepore-beta-thalassemia syndrome	HBD
+ENSG00000223865	major histocompatibility complex, class II, DP beta 1 [Source:HGNC Symbol;Acc:HGNC:4940]	Chronic beryllium disease	HLA-DPB1
+ENSG00000223865	major histocompatibility complex, class II, DP beta 1 [Source:HGNC Symbol;Acc:HGNC:4940]	Granulomatosis with polyangiitis	HLA-DPB1
+ENSG00000231389	major histocompatibility complex, class II, DP alpha 1 [Source:HGNC Symbol;Acc:HGNC:4938]		HLA-DPA1
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	ALPHA-THALASSEMIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA DOMINANT INCLUSION BODY TYPE	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	ERYTHROCYTOSIS FAMILIAL 6	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	FETAL HEMOGLOBIN QUANTITATIVE TRAIT LOCUS 1	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	HEINZ BODY ANEMIAS	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	MALARIA SUSCEPTIBILITY TO MALARIA RESISTANCE TO INCLUDED	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	METHEMOGLOBINEMIA BETA TYPE	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	SICKLE CELL ANEMIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	BETA-THALASSEMIA INTERMEDIA	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Beta-thalassemia major	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Delta-beta thalassemia	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Dominant beta-thalassemia	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Heinz body anemia	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin C disease	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin C-beta-thalassemia syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin D disease	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin E disease	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin E-beta-thalassemia syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin Lepore-beta-thalassemia syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hemoglobin M disease	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hereditary persistence of fetal hemoglobin-beta-thalassemia syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Hereditary persistence of fetal hemoglobin-sickle cell disease syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-beta-thalassemia disease syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin C disease syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin D disease syndrome	HBB
+ENSG00000244734	hemoglobin subunit beta [Source:HGNC Symbol;Acc:HGNC:4827]	Sickle cell-hemoglobin E disease syndrome	HBB
+ENSG00000266074	BAH domain and coiled-coil containing 1 [Source:HGNC Symbol;Acc:HGNC:29279]		BAHCC1
