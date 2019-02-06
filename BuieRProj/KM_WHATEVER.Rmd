@@ -1,29 +1,81 @@
 ---
-title: "R Notebook"
+title: "Use of K-means and SVM in ML for Detection of Genetic Association with Risk in Cases of AML"
+author: "Ronald W Buie"
 output: html_notebook
 ---
 
 ```{r setup}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+
 library(xlsx)
 library(MASS)
 library(stats)
 library(useful)
 library(ggplot2)
+library(e1071)
+library(ROCR)
+
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
 ```
-
-# Aim
-
-Identfiy relationships between categories of AML and genetic assay results
 
 # Background
 
 Acute Myeloid Leukemia is a cancer affecting blood stem cells. Onset is sudden and affected cells can outcompete normal cells, resulted in complications and death. AML has multiple variants. Unlike staging used in many cancers AML affected cells are typed as part of treatment. These types serve to identify phenotypes of expression of the disease. Treatment is similar to other cancerns, involving radiation and chemotherapy. Relapse affects 50% of cases.
 
+# Data
+
+Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients. Patients with multiple records had later records excluded so that N=145 results were retained in the study. Among the 214?? genetic assays available, 1910 were included. (exclusion criterea here)
+
+## Aim #1 (depreciated)
+
+Identfiy relationships between categories of AML and genetic assay results
+
+
 ```{r read_data}
 #reading a full data set of patients (these are later subsetted to patients with assays
-{
-  PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
-  PatientAndPhenotypeOnly <- PatientList
+PatientList <- read.xlsx("./data/TARGET_AML_ClinicalData_20160714.xlsx", sheetIndex = 1, stringsAsFactors = FALSE)
+
+#reading compiled patient data
+CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv", stringsAsFactors = FALSE)
+CleanedWithGenes$X <- NULL
+
+#temp testing
+backup <- CleanedWithGenes
+CleanedWithGenes <- backup
+
+# removing non clinical cases
+CleanedWithGenes <- CleanedWithGenes[CleanedWithGenes$Diagnostic.ID %!in% c("04A","40A","02A","06A","11A"),] 
+
+#reading test and train identifiers
+SampleTrain <- read.csv("./data/TARGET_AML_Training_Samples.csv", stringsAsFactors = FALSE)
+SampleTest <-  read.csv("./data/TARGET_AML_Testing_Samples.csv", stringsAsFactors = FALSE)
+
+#assigning train and test variable to full genetic/patient DF
+CleanedWithGenes$train <- 0
+CleanedWithGenes[CleanedWithGenes$TARGET.USI  %in% SampleTest[,1],]$train <- 1
+
+#subset to DEG
+DEGs <- read.csv("./data/TARGET_AML_HIGH.Std.Risk_vs_LowRisk_DEGs.csv", stringsAsFactors = FALSE)
+CleanedWithGenesDEG <- CleanedWithGenes[, colnames(CleanedWithGenes) %in% DEGs$X]
+GeneRiskTrain <- cbind(TARGET.USI = CleanedWithGenes$TARGET.USI, Risk.group = CleanedWithGenes$Risk.group, train = CleanedWithGenes$train , stringsAsFactors = FALSE, CleanedWithGenesDEG)
+
+
+
+```
+
+
+
+### Analysis
+
+Our analysis took two phases, grouping of cellular classifications into phenotypes, and identification of differences in genetic assay results between phenotypes.
+
+#### Assumptions
+
+Where phenotyping information were not available, we assumed the observation to be "not there" instead of NA. This was to 
+
+```{r preparing_aim1_data}
+PatientAndPhenotypeOnly <- PatientList
   
   # removing non mutation phenotyping information from DF
   PatientAndPhenotypeOnly[,c("Gender","Race",
@@ -39,7 +91,8 @@ Acute Myeloid Leukemia is a cancer affecting blood stem cells. Onset is sudden a
                  "Year.of.Last.Follow.Up",
                  "Protocol",
                  "WBC.at.Diagnosis",
-                 "Bone.marrow.leukemic.blast.percentage....",
+            
+               "Bone.marrow.leukemic.blast.percentage....",
                  "Peripheral.blasts....",
                  "CNS.disease",
                  "Chloroma",
@@ -70,29 +123,10 @@ Acute Myeloid Leukemia is a cancer affecting blood stem cells. Onset is sudden a
   PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Yes"| PatientAndPhenotypeOnly == "YES"] <- 1
   
   PatientAndPhenotypeOnly[-1] <- lapply(PatientAndPhenotypeOnly[-1], as.numeric)
-
-}
-
-#reading compiled patient data
-{
-  CleanedWithGenes <- read.csv("./data/AML_assay_clinical.csv")
-  
-}
 ```
 
-# Data
 
-Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients.
-
-## Assumptions
-
-Where phenotyping information were not available, we assumed the observation to be "not there" instead of NA. This was to 
-
-# Analysis
-
-Our analysis took two phases, grouping of cellular classifications into phenotypes, and identification of differences in genetic assay results between phenotypes.
-
-## Identifying Phenotypes: K-means
+### Identifying Phenotypes: K-means
 
 Data from all 993 patients were used to identify phenotypes. Patients had a variety of tests for cell mutation typing, including positive and negatives. However, all patients also had NA values across some tests. This aligns with clinical practice where a provider focuses on testing for certain types and, once an optimal course of treatment is identified, has no need to further specify the types of mutation. Because a step of clinical expertise was involved, we decided to identify all NA values has 0 (not found), under the assumption that, more likely than not, something not tested for was not expected by the expert. 
 
@@ -100,7 +134,7 @@ Notably, rather than informing phenotypes through clinical or biological knowled
 
 ```{r kmeans_clustering_analysis}
 KMeansReview <- PatientAndPhenotypeOnly
-unlink("plots/kmeans/*.jpg")
+#unlink("plots/kmeans/*.jpg")
 for(i in 20:4) {
   km.PatientPheno <- kmeans(PatientAndPhenotypeOnly[-1],i, nstart = 25)
   KMeansReview[,paste(i,"_k", sep = "")] <- km.PatientPheno$cluster
@@ -112,11 +146,175 @@ for(i in 20:4) {
 
 ```{r attaching_clusters_cleaned_data }
 GroupMatching <- KMeansReview[,c("TARGET.USI","4_k")]
+GroupMatching$KM <-  GroupMatching$`4_k`
+GroupMatching$`4_k` <- NULL
 
-Clea
+CleanedWithGenesKM4 <- merge(CleanedWithGenes, GroupMatching, by = "TARGET.USI", all.x = TRUE)
+
+```
+### UNFINISHED
+
+## Aim 2
+
+Identify genes with strong associations between patient risk category and genetic eassay results using SVM
+
+```{r seanM_SVM_function}
+#The following function was developed by Sean Maden. It returns an object containing performance data on SVM models performed on both train and test data.
+
+runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
+                   testset,testclasses, weightfilt=FALSE){
+  # run SVM optimization
+  # Arguments
+  #   * seed : set seed (int) for randomization
+  #   * kerneltype : (str) type of kernel for SVM, either 'linear' or 'gaussian'
+  #   * trainset : training dataset (excluding sample classes)
+  #   * trainclasses : classes for training sampels (vector) with 1:1 correspondence 
+  #       with trainset rows
+  #   * testset : test data (data frame or matrix), excluding classes
+  #   * testclasses : classes for test samples (vector), with 1:1 row:pos correspondence
+  #   * weightfilt : (FALSE or numeric) top percentage weights to use in model 
+  #       (if FALSE, then all weights used) 
+  # Returns
+  #   * rl (list) : list containing model fitted, predictions, and performacne metrics
+  require(e1071); require(ROCR)
+  rl <- list(); str.options <- ""
+  set.seed(seed)
+  ndtr <- trainset
+  ndte <- testset
+  ndtr.classes <- trainclasses
+  ndte.classes <- testclasses
+  
+  # train svm model
+  svm_model <- svm(as.factor(ndtr.classes)~., 
+                   data=ndtr, 
+                   method="C-classification", 
+                   kernel=kerneltype)
+  weightsvect <- ndtr.weights <- t(svm_model$coefs) %*% svm_model$SV
+  if(weightfilt){
+    str.options <- c(str.options,paste0("weight filt = ",weightfilt))
+    # order training data on relative weights
+    ndtr.weightsort <- ndtr[,rev(order(abs(ndtr.weights)))]
+    # select only top proportion weights
+    nweight.col = round(ncol(ndtr.weightsort)*weightfilt,0)
+    ndtr.weightfilt <- ndtr.weightsort[,c(1:nweight.col)]
+    str.options <- c(str.options,paste("cols_retained:",colnames(ndtr.weightfilt),collapse=";"))
+    # redefine training set, rerun SVM optimization
+    ndtr <- ndtr.weightfilt
+    svm_model <- svm(as.factor(ndtr.classes)~., 
+                     data=ndtr, 
+                     method="C-classification", 
+                     kernel=kerneltype)
+  } else{
+    str.options <- c(str.options,"no weight filt")
+  }
+  pred_train <- predict(svm_model, ndtr, decision.values = TRUE)
+  pred_test <- predict(svm_model, ndte, decision.values = TRUE)
+  # get performance metrics
+  pred <- prediction(as.numeric(attr(pred_test,"decision.values")),ndte.classes)
+  perf <- performance(pred,"tpr","fpr")
+  ppred <- pred_test[pred_test==1]; 
+  tppred <- ndte.classes[pred_test==1]
+  ppred <- as.numeric(as.character(ppred))
+  testprec <- length(ppred[ppred==tppred])/length(ppred) # test precision
+  rposi <- ndte.classes==1
+  rtpred <- ndte.classes[rposi]; 
+  rppred <- pred_test[rposi]
+  rppred <- as.numeric(as.character(rppred))
+  testrec <- length(rppred[rppred==1])/length(rppred) # test recall
+  
+  # return model, pred's, and performance metrics
+  rl <- list(str.options,
+             svm_model,
+             weightsvect,
+             pred_train,
+             pred_test,
+             perf,
+             tppred,
+             testprec,
+             testrec)
+  names(rl) <- c("options_string",
+                 "svm_model",
+                 "weightsvect",
+                 "predictions_train",
+                 "predictions_test",
+                 "performance_test",
+                 "TPR_test",
+                 "precision_test",
+                 "recall_test"
+  )
+  return(rl)
+  
+}
+
+```
+
+
+### Analysis
+
+```{r aim1_SVM}
+
+SVMDF <- GeneRiskTrain
+
+SVMDF <- SVMDF[SVMDF$Risk.group != "Unknown",]
+SVMDF[SVMDF$Risk.group == "Low",]$Risk.group <- "0"
+SVMDF[SVMDF$Risk.group == "Standard" | SVMDF$Risk.group == "High",]$Risk.group <- "1"
+SVMDF$Risk.group <- as.numeric(SVMDF$Risk.group)
+
+training <- SVMDF[SVMDF$train == 1, -c(1,2,3)]
+trainclass <- SVMDF[SVMDF$train == 1, "Risk.group"]
+
+
+testing <- SVMDF[SVMDF$train == 0, -c(1,2,3)]
+testclass <- SVMDF[SVMDF$train == 0, "Risk.group"]
+
+
+SVMResults <- runSVM(1000,"linear", training, as.factor(trainclass), testing, as.factor(testclass))
+
+colnames(SVMResults$weightsvect)
+weights <-SVMResults$weightsvect[1:1910]
+quantiles <- quantile(weights)
+
+tall <- as.data.frame(t(SVMResults$weightsvect))
+tall$names <- row.names(tall)
+high4 <- tall[tall$V1 > quantiles[4],]$names
+low4 <- tall[tall$V1 < quantiles[2],]$names
+#this provided 477 observations on both ends
+
+#applying 10% quantiles to narrow selection
+tenthquantiles <- quantile(weights, probs = seq(0,1,0.10))
+
+
+high10 <- tall[tall$V1 > tenthquantiles[10],]$names
+low10 <- tall[tall$V1 < tenthquantiles[2],]$names
+
+#applying 5% quantiles to narrow selection
+twentyquantiles <- quantile(weights, probs = seq(0,1,0.05))
+
+
+high20 <- tall[tall$V1 > twentyquantiles[20],]$names
+low20 <- tall[tall$V1 < twentyquantiles[2],]$names
+
+#applying 1% quantiles to narrow selection
+onehundredquantiles <- quantile(weights, probs = seq(0,1,0.01))
+
+
+high100 <- tall[tall$V1 > onehundredquantiles[100],]$names
+low100 <- tall[tall$V1 < onehundredquantiles[2],]$names
+
+#applying .1% quantiles to narrow selection
+onethousandthquantiles <- quantile(weights, probs = seq(0,1,0.001))
+
+
+high1000 <- tall[tall$V1 > onethousandthquantiles[1000],]$names
+low1000 <- tall[tall$V1 < onethousandthquantiles[2],]$names
 
 
 ```
 
+Weights were divded into quartiles. Genes expressed in the outer two quartiles recorded for further analysis
+
+## Aim 3 (low priority, should include in aim 1 in rewrite)
+
+Test correlation between identified AML phenotypes and Risk Groups
 
 
