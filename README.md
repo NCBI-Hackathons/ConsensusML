@@ -1,12 +1,12 @@
 ConsensusML [![DOI](https://zenodo.org/badge/169003170.svg)](https://zenodo.org/badge/latestdoi/169003170)
 ---
 
-# RNAseq_Cancer_Biomarkers
+# Detecting Cancer Biomarkers from RNA-seq Using Machine Learning
 Machine Learning to Detect Cancer Biomarkers from RNAseq Data
 
-- Workflow to apply machine learning methods for feature selection to determine sets of best discriminating gene bio-markers using RNAseq data from heterogeneous cancer populations.
+- Workflow to apply machine learning methods for feature selection and selection consensus, to determine sets of best discriminating gene biomarkers using RNA-seq data from heterogeneous cancer populations (e.g. pediatric AML, etc.).
 
-- This would be a workflow that is publicly available to bioinformaticians who use RNA-seq gene expression data to characterize tumors, and would assist in finding biomakers that are best able to identify specific subpopulations in a cancer cohort (e.g. TCGA AML, TARGET NBL, TARGET WT). 
+- This would be a workflow that is publicly available to bioinformaticians who use RNA-seq gene expression data to characterize tumors, and would assist in finding biomakers that are best able to identify specific subpopulations in a cancer cohort (e.g. TARGET AML, TCGA AML, TARGET NBL, TARGET WT). 
 
 # Background
 Leukemia is a cancer of the blood arising in white blood cells of the bone marrow. It poses a substantial population burden as the most common pediatric cancer ([Steliarova-Foucher et al 2017](https://www.ncbi.nlm.nih.gov/pubmed/28410997); [SEER data](https://seer.cancer.gov/statfacts/html/amyl.html)). Acute Myelogenous Leukemeia (AML) is a type of leukemia impacting the myeloblast stem cells that accounts for a substantial population burden, arising at a current rate of approximately 20,000 cases per year with 27.4% 5-year survival 2. AML is molecularly heterogeneous, with several clinically relevant subtypes, including perhaps dozens of subtypes defined by factors ranging from cell differentiation state to cytogenic and sequencing assays ([Yi G. et al 2019](https://www.sciencedirect.com/science/article/pii/S2211124718320588?via%3Dihub); [Tyner J. W. et al 2018](https://www.nature.com/articles/s41586-018-0623-z)). Pediatric AML is characterized at a molecular level by rare somatic mutations, absence of common adult AML mutations, and relatively frequent structural variants ([Bolouri H et al 2018](https://www.nature.com/articles/nm.4439)). Here, we apply several machine learning approaches for feature selection of RNA-seq data from both pediatric and adult AML cases. Our goal was to better understand gene expression-based heterogeneity underlying AML cases, as well as age-related and -unrelated dysregulation patterns. We used clinical and assay data from pediatric cancer patients from the Therapeutically Applicable Research To Generate Effective Treatments (TARGET) initiative (https://ocg.cancer.gov/programs/target/).
