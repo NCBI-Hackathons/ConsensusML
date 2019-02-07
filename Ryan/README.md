@@ -17,4 +17,8 @@ False Discovery Rate = 32%
 
 However, the most interesting data is the genes (or features) which the GLM ended up using to create predictions - these features and their coefiicients are listed [here](https://github.com/NCBI-Hackathons/ConsensusML/blob/master/Ryan/feature_list.csv)
 
+For example some of the genes that were corelated with low EVST are sumarized below:
+HPS4,HSPB1 - Heat shock proteins that have been implicated in relapse of [HBV associated hepatocellular cancer](https://doi.org/10.7150/ijms.10735) 
+
+
 
