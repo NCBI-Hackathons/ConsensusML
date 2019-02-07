@@ -16,6 +16,8 @@
 Lasso run again until conversion, features reduced to **174 features**. 15 shared "important" features
 between XGBoost and Lasso. Of those 15, 6 belong to original 11, 9 novel.
 
+![Screenshot](post.png)
+
 Those 20 genes warrant further investigation.
 
 
