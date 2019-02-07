@@ -370,7 +370,6 @@ So some genes in TMM counts in the AML.CDE.s were not included in the DE and vic
 
 ##RiskGroup.Class
 
-
 ```{r}
 RG.GLM.df <- AML.CDE.s %>%
   select(1:84,RiskGroup.Class, train_test_set) %>% 
@@ -402,18 +401,24 @@ Mod.RG <- glm.binom(x=grep("^ENSG",  colnames(RG.GLM.df), value=TRUE),
 ```
 
 ```{r fig.height=6, fig.width=8}
+# tiff("RiskGroup_Lasso_Training_Dev.tiff", height = 5, width=5, units = "in", res=300)
 plot(Mod.RG$train.fit, xvar = "dev", label=TRUE)
+# dev.off()
 ```
 
 ```{r}
 # Mod.RG$cv.fit$lambda.1se #0.6579332
 # Mod.RG$cv.fit$lambda.min #0.1629751
+# tiff("RiskGroup_Lasso_Train_Coef.tiff", height = 5, width=5, units = "in", res=300)
 plot(Mod.RG$cv.fit)
+# dev.off()
 ```
 
 ```{r}
 Mod.RG$confusionMatrix
 Mod.RG$test.error # 0.06818182
+
+# write.csv(Mod.RG$confusionMatrix, "RiskGroup_Confusion_Matrix.csv")
 ```
 
 ```{r}
@@ -431,15 +436,21 @@ coef
 
 ##MLL
 
+###imbalanced Classes 
+
 ```{r}
 MLL.GLM.df <- AML.CDE.s %>%
-  select(1:84,MLL.Update, train_test_set, 
-         intersect(grep("^ENSG", colnames(.), value=T),
-                         rownames(DE.MLL$DEGs))) %>% #missing 84 DEGs .... Will re-do ASAP
+  select(1:84,MLL.Update, train_test_set) %>% 
+  
+  inner_join(., t(cpm[rownames(DE.MLL$DEGs),]) %>% 
+               as.data.frame() %>%
+               rownames_to_column("TARGET.USI"), 
+             by="TARGET.USI") %>% 
+  
   filter(MLL.Update != "Unknown") %>% 
   set_rownames(.$TARGET.USI)
 
-dim(MLL.GLM.df) 
+dim(MLL.GLM.df)  # 135 1661
 head(MLL.GLM.df[,1:5])
 ```
 
@@ -462,18 +473,34 @@ plot(Mod.MLL$cv.fit) #cv for lambda based on 446 LD 0531 RNAseq data
 ```
 
 ```{r}
-Mod.MLL$cv.fit$lambda.min#0.2848036
+Mod.MLL$cv.fit$lambda.min#0.6579332
 Mod.MLL$cv.fit$lambda.1se #0.869749
 ```
 
 ```{r}
-Mod.MLL$test.error #0.1395349
+Mod.MLL$confusionMatrix
+Mod.MLL$test.error #0.1627907
 ```
 
 ```{r}
 Mod.MLL$nonzero.coef
 ```
 
+Considering that there is nearly 30% true positives, this model did perform much worse than expected... 
+
+###Over-Sampling
+
+```{r}
+install.packages("ROSE")
+library(ROSE)
+```
+
+```{r}
+data_balanced_both <- ovun.sample(cls ~ ., data = hacide.train, method = "both", p=0.5,                             N=1000, seed = 1)$data
+
+table(data_balanced_both$cls)
+
+```
 
 
 
