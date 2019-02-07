@@ -15,6 +15,6 @@ Precision = 31/46 = 67%
 Specificity = 17/32 = 53%
 False Discovery Rate = 32%
 
-However, the most interesting data is the genes (or features) which the GLM ended up using to create predictions - these features and their coefiicients are listed [here]()
+However, the most interesting data is the genes (or features) which the GLM ended up using to create predictions - these features and their coefiicients are listed [here](https://github.com/NCBI-Hackathons/ConsensusML/blob/master/Ryan/feature_list.csv)
 
 
