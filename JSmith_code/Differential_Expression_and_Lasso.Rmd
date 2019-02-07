@@ -27,11 +27,68 @@ library(edgeR)
 getwd()
 ```
 
+#Define Functions 
+
+```{r}
+volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
+  
+
+
+  df <- data.frame(logFC=fit$coefficients[,1],
+                   pValue=fit$p.value[,1],
+                   FDR=p.adjust(fit$p.value[,1], method="BH"),
+                   MeanExpression=fit$Amean) %>%
+      rownames_to_column("Gene") %>%
+      mutate(Neg.Log10.P= -log10(pValue),
+             DEGs.Groups=case_when(
+                  logFC > 1.0 & pValue < 0.05 ~ "FC Greater than 2",
+                  logFC < -1.0 & pValue < 0.05 ~ "FC Less than 2",
+                  TRUE ~ "Not Significant FC"))
+
+  
+  #Select differentially expressed genes to highlight in the plot. 
+  ToHighlight <- df[abs(df$logFC) > cut.off & df$FDR < 0.05, "Gene"] 
+  idx <- which(abs(df$logFC) > cut.off & df$FDR < 0.05)
+  
+  vplot <- ggplot(df, aes(x=logFC, y=Neg.Log10.P)) + 
+    geom_point(data = filter(df, DEGs.Groups == "Not Significant FC"), 
+               mapping = aes(x=logFC, y=Neg.Log10.P, color=DEGs.Groups), alpha=0.65)  +
+    
+    geom_point(data= filter(df, grepl("2", DEGs.Groups)), 
+               mapping = aes(x=logFC, y=Neg.Log10.P, color=DEGs.Groups)) +
+    
+    geom_vline(xintercept=c(-1,1)) +
+    geom_hline(yintercept = -log10(0.05)) +
+    
+    scale_color_manual(values=c("FC Greater than 2"="red", 
+                                "FC Less than 2"="blue",
+                                "Not Significant FC"="lightgrey")) +
+    
+    theme(plot.title = element_text(hjust = 0.5, size = 20),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.border = element_rect(color = "black", fill=NA),
+          axis.text = element_text(color = "black"),
+          axis.text.x = element_text(angle = 0,hjust=0.5,vjust = 0.5, size = 26),
+          axis.text.y = element_text(size = 25),
+          axis.title = element_text(size = 30),
+          plot.margin = margin(2,2,2,2, unit = "mm")) +
+    
+    geom_text(aes(x=logFC+label.offset, y=Neg.Log10.P, label=ToHighlight),size=3.5,
+              data=df[idx, ])
+ 
+
+  return(vplot)
+  
+}
+```
+
 
 #Read in Counts 
 
 ```{r}
-counts <- read.csv("TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
+counts <- read.csv("Expn_Data/TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
 
 head(counts[,1:5])
 dim(counts)
@@ -132,38 +189,6 @@ table(AML.CDE.s$train_test_set)
 ```
 
 
-
-CDE.train <- AML.CDE.s %>%
-  filter(TARGET.USI %in% AML.train) %>% 
-  
-  mutate(RiskGroup.Class=case_when(
-    grepl("High|Standard", Risk.group) ~ "Yes", 
-    grepl("Low", Risk.group) ~ "No", 
-    grepl("Unknown", Risk.group) ~ "Unknown" )) %>% 
-  
-  mutate(Age.Class=ifelse(Age.at.Diagnosis.in.Days > median(Age.at.Diagnosis.in.Days), "Yes", "No")) %>%
-  
-  mutate(MLL.Update=case_when(
-    Primary.Cytogenetic.Code == "MLL" ~ "MLL", 
-    Primary.Cytogenetic.Code == "Unknown" ~ "Unknown", 
-    TRUE ~ "No")) %>%
-  
-  set_rownames(.$TARGET.USI)
-
-
-dim(CDE.train)
-
-table(CDE.train$Risk.group)
-table(CDE.train$RiskGroup.Class)
-table(CDE.train$Age.Class)
-table(CDE.train$MLL.Update)
-
-
-```{r}
-# lapply(CDE.train[c(15:35,45:47)], table)
-```
-
-
 #Split the Expression Data into Train/Test
 
 ```{r}
@@ -188,7 +213,6 @@ counts.train <- counts.sub[,AML.train]
 dim(counts.train)
 ```
 
-
 ```{r}
 dge <- DGEList(counts = counts.sub)
 samp <- ncol(counts.sub)
@@ -208,7 +232,7 @@ cpm <- cpm(dge,log = TRUE, prior.count = 1)
 #Differential Expression Analysis
 
 ```{r}
-source("r_code/Limma_Voom_DE_Function.R")
+source("JSmith_code/Limma_Voom_DE_Function.R")
 ```
 
 
@@ -236,6 +260,14 @@ dim(DE.RG$DEGs)
 
 # write.csv(DE.RG$DEGs, "r_code/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv")
 ```
+
+
+```{r}
+# tiff("JSmith_code/Results/RiskGroup_DEGs_VolcancoPlot.tiff", height = 5, width = 5, units="in", res=200)
+volcano_plot(fit = DE.RG$fit)
+# dev.off()
+```
+
 
 ##MLL 
 
@@ -361,12 +393,6 @@ glm.binom <- function(x,y,df,ref="No", train.names=NULL, test.names=NULL,
 
 Will use TMM Normalized Counts and Training CDEs with only gene expression values 
 
-Note: Since I anticipated using all 3 cancer cohorts - I created the normalized dataset from all 3. 
-Ultimately I subset for AML only and used raw counts (60K genes +) for DE analysis
-So some genes in TMM counts in the AML.CDE.s were not included in the DE and vice versa. 
-
-*To address I will need to go back the original normalization step and do the norm on the 3 cohorts seperately. *
-
 
 ##RiskGroup.Class
 
@@ -385,8 +411,7 @@ RG.GLM.df <- AML.CDE.s %>%
 dim(RG.GLM.df) #137 2084
 head(RG.GLM.df[,1:5])
 
-# table(RG.GLM.df$RiskGroup.Class, RG.GLM.df$train_test_set)
-# write.csv(RG.GLM.df, "TARGET_AML_RG_Df.csv")
+table(RG.GLM.df$RiskGroup.Class, RG.GLM.df$train_test_set)
 ```
 
 Option grouped=FALSE enforced in cv.glmnet, since < 3 observations per fold 
@@ -397,7 +422,6 @@ Mod.RG <- glm.binom(x=grep("^ENSG",  colnames(RG.GLM.df), value=TRUE),
                      df=RG.GLM.df,
                      train.names = RG.GLM.df$TARGET.USI[RG.GLM.df$train_test_set=="Train"],
                      test.names = RG.GLM.df$TARGET.USI[RG.GLM.df$train_test_set=="Test"])
-
 ```
 
 ```{r fig.height=6, fig.width=8}
@@ -422,16 +446,34 @@ Mod.RG$test.error # 0.06818182
 ```
 
 ```{r}
+gene_Ids <- read.csv("JSmith_code/Results/TARGET_AML_Logisitic_Lasso_with_DEGs_GeneSymbols.csv")
+
 coef <- data.frame(Mod.RG$nonzero.coef) %>%
   rownames_to_column("Gene_ID") %>%
   arrange(desc(Mod.RG.nonzero.coef)) %>% 
-  mutate_at(vars(Gene_ID), funs(gsub("\\.[0-9]{1,}", "", .)))
+  mutate_at(vars(Gene_ID), funs(gsub("\\.[0-9]{1,}", "", .))) %>% 
+  inner_join(., gene_Ids, by=c("Gene_ID"="Gene.stable.ID")) %>%
+  set_rownames(.$Gene_ID)
 
 coef
-
-# write.csv(coef, "TARGET_AML_Logistic_Lasso_withDEGs_RiskGroup_Associated_Genes.csv")
+dim(coef)
+# write.csv(coef, "JSmith_code/Results/TARGET_AML_Logistic_Lasso_withDEGs_RiskGroup_Associated_Genes.csv")
 ```
 
+
+#Compare to Lasso without prefilter and consensu methods
+
+```{r}
+lasso.dl <- read.csv("scripts/lasso_genes_178.csv", row.names = 1) %>% 
+  mutate_at(vars(X0), funs(gsub("\\.[0-9]{1,}","", .)))
+  
+
+head(lasso.dl)
+```
+
+```{r}
+coef[intersect(coef$Gene_ID, lasso.dl$X0),]
+```
 
 
 ##MLL
