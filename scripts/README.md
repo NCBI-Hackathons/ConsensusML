@@ -24,10 +24,12 @@ Those 20 genes warrant further investigation.
 ## File Structure Summary 
 | Directory                  | Description                        | 
 | ---------------------      |:----------------------------------:| 
-| model_walkthrough.ipynb    | notebook showing modeling          | 
-| data                       | from Clinical_Data/ & Expn_Data/   |
-| clean.py                   | cleaning and merging data          | 
-| model_comp.py              | tools for modeling, sklearn        | 
+|archives                    | old notebooks                      | 
+|data                        | csvs after merge, in zip file      |
+|pictures                    | pictures for readme                |
+|model_walkthrough.ipynb     | notebook for modeling              |
+|clean.py                    | cleaning and merging data          | 
+|model_comp.py               | tools for modeling, sklearn        | 
 
-Other notebooks are for eda/function testing
+dummies.py not used..
 
