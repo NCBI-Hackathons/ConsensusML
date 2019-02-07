@@ -16,6 +16,6 @@ The focus of these Investigations are to identify genes that are associated with
 
 This procedure produced a small  number of genes which can be easily further investigated for defining theraputic targets/biomarkers or potentially prediction of poor prognosis using diagnostic samples.
 
-!["volcano_plot"](https://github.com/NCBI-Hackathons/ConsensusML/blob/master/JSmith_code/Results/RiskGroup_DEGs_VolcancoPlot.tiff "volcano_plot")
+!["volcano_plot"](https://github.com/NCBI-Hackathons/RNAseq_Cancer_Biomarkers/blob/master/JSmith_code/Results/RiskGroup_DEGs_VolcancoPlot.tiff "volcano_plot")
 
 !["ML RNA-seq biomarkers, methods flow chart"](https://github.com/NCBI-Hackathons/RNAseq_Cancer_Biomarkers/blob/master/methods.jpg "Day 1 Flowchart")
