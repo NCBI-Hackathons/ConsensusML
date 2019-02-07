@@ -20,5 +20,7 @@ However, the most interesting data is the genes (or features) which the GLM ende
 For example some of the genes that were corelated with low EVST are sumarized below:
 HPS4,HSPB1 - Heat shock proteins that have been implicated in relapse of [HBV associated hepatocellular cancer](https://doi.org/10.7150/ijms.10735) 
 
+TPCN2 which has been associated with [relapse of prostate cancer after surgery](https://doi.org/10.1007/s12094-018-02029-z)
+
 
 
