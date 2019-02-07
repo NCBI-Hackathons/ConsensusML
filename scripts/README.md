@@ -1,6 +1,10 @@
 # Machine Learning to identify key genes in AML
 
 ## TLDR
+
+used RF, XGB, and Logistic Regression w Lasso to identify 20 key genes in AML
+
+## Overview
 1) Data cleaning: merge clinical, manifest, and ensemble gene info for three AML, WT and AML
 
 2) Modeling: modeling on AML data to predict status of "Low Risk" vs. "Not Low Risk" (Standard + High) - if patient shows up more than once, use earlier one
