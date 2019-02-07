@@ -263,9 +263,9 @@ dim(DE.RG$DEGs)
 
 
 ```{r}
-# tiff("JSmith_code/Results/RiskGroup_DEGs_VolcancoPlot.tiff", height = 5, width = 5, units="in", res=200)
+tiff("JSmith_code/Results/RiskGroup_DEGs_VolcancoPlot.tiff", height = 8, width = 12, units="in", res=200)
 volcano_plot(fit = DE.RG$fit)
-# dev.off()
+dev.off()
 ```
 
 
