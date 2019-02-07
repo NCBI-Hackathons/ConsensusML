@@ -311,7 +311,7 @@ testclass <- SVMDF[SVMDF$train == 0, "Risk.group"]
 
 SVMResults <- runSVM(1000,"linear", training, as.factor(trainclass), testing, as.factor(testclass))
 
-colnames(SVMResults$weightsvect)
+
 weights <-SVMResults$weightsvect[1:1910]
 quantiles <- quantile(weights)
 
@@ -350,15 +350,37 @@ onethousandthquantiles <- quantile(weights, probs = seq(0,1,0.001))
 high1000 <- tall[tall$V1 > onethousandthquantiles[1000],]$names
 low1000 <- tall[tall$V1 < onethousandthquantiles[2],]$names
 
-
+write.csv(high1000,"./output/High1000.csv")
+write.csv(low1000,"./output/low1000.csv")
+write.csv(high100,"./output/High100.csv")
+write.csv(low100,"./output/low100.csv")
+write.csv(high20,"./output/High20.csv")
+write.csv(low20,"./output/low20.csv")
+write.csv(high10,"./output/High10.csv")
+write.csv(low10,"./output/low10.csv")
+write.csv(high4,"./output/High4.csv")
+write.csv(low4,"./output/low4.csv")
 ```
 
 SVM
 
-  Weights were divded into quartiles deciles, . Genes expressed in the outer two quantiles at the 25%, 20%, 1% and 0.1%. The identified genes in the .1% quartile were not found to be associated with known AML gnes. Higher quartiles may, simply by virtue of size. It may be that, combined with other approaches an effective way to use ML to identify significant variants could be found.
+  Weights were divded into quartiles deciles, . Genes expressed in the outer two quantiles at the 25%, 20%, 1% and 0.1%. 3 of 4 genes in the .1% quartile were found to be associated with known AML genes and clinical outcomes.
 
   
 
+## Aim 3
+
+Testing performance of QDA on survival and genetic data.
+
+```{r}
+SVMDF <- GeneRiskTrain
+
+SVMDF <- SVMDF[SVMDF$Risk.group != "Unknown",]
+SVMDF[SVMDF$Risk.group == "Low",]$Risk.group <- "0"
+SVMDF[SVMDF$Risk.group == "Standard" | SVMDF$Risk.group == "High",]$Risk.group <- "1"
+SVMDF$Risk.group <- as.numeric(SVMDF$Risk.group)
 
 
+```
 
+#times up!
