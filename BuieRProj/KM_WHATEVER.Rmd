@@ -14,6 +14,9 @@ library(useful)
 library(ggplot2)
 library(e1071)
 library(ROCR)
+library(tidyverse) 
+library(cluster)  
+library(factoextra)
 
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -78,12 +81,13 @@ Where phenotyping information were not available, we assumed the observation to 
 
 ```{r preparing_aim1_data}
 PatientAndPhenotypeOnly <- PatientList
-  
+
   # removing non mutation phenotyping information from DF
   PatientAndPhenotypeOnly[,c("Gender","Race",
                              "Ethnicity",
                              "Age.at.Diagnosis.in.Days",
                              "First.Event",
+                             "FLT3.ITD.allelic.ratio",
                              
   
                   "Event.Free.Survival.Time.in.Days",  
@@ -131,7 +135,7 @@ KMDF <- GeneRiskTrain
 
 KMDF <- KMDF[KMDF$Risk.group != "Unknown",]
 KMDF[KMDF$Risk.group == "Low",]$Risk.group <- "0"
-KMDF[KMDF$Risk.group == "Standard",]$Risk.group <- "1"
+KMDF[KMDF$Risk.group == "Standard",]$Risk.group <- "2"
 KMDF[KMDF$Risk.group == "High",]$Risk.group <- "2"
 
 KMDF$Risk.group <- as.numeric(KMDF$Risk.group)
@@ -145,49 +149,43 @@ Data from all 993 patients were used to identify phenotypes. Patients had a vari
 Notably, rather than informing phenotypes through clinical or biological knowledge, we used the k-means unsupervised classification to group the available phenotype data. A synsitivity analysis of K= 20 to K=4 identified clustering of classes into groups of 4 across all values of K. Therefore the model of K = 4 was used to assign classes to the data.
 
 ```{r kmeans_clustering_analysis}
+set.seed(1000)
 KMeansReview <- PatientAndPhenotypeOnly
 #unlink("plots/kmeans/*.jpg")
-for(i in 20:3) {
+for(i in 20:2) {
   km.PatientPheno <- kmeans(PatientAndPhenotypeOnly[-1],i, nstart = 25)
   KMeansReview[,paste(i,"_k", sep = "")] <- km.PatientPheno$cluster
-  plot(km.PatientPheno)+ggsave(paste("plots/kmeans/",i,".jpg", sep = ""))
+  fviz_cluster(km.PatientPheno, data = PatientAndPhenotypeOnly[-1])+ggsave(paste("plots/kmeans/",i,".jpg", sep = ""))
+  #plot(km.PatientPheno)+ggsave(paste("plots/kmeans/",i,".jpg", sep = ""))
 
 }
 
 ```
-```{r testing_missing_ks}
-
-
-
-
-
-```
+Using cluster analysis our data can be found in two distinct groups. 
 
 
 ```{r attaching_clusters_cleaned_data }
 
-
-GeneWKM <- merge(KMDF,KMeansReview[,c("TARGET.USI","8_k")], by.x = "TARGET.USI")
+GeneWKM <- merge(KMDF,KMeansReview[,c("TARGET.USI","2_k")], by.x = "TARGET.USI")
 
 
 ```
 
-Notably when merging our data files, one grop is removed. This occures at both k=3 and K=4 and K=8 (other k's not yet tested).
+
 
 ### Testing ASsociation of Outcome and Phenotype groups
 
 ```{r}
-
-KMRGfit <- glm(as.factor(Risk.group) ~ as.factor(`8_k`), data = GeneWKM, family = "binomial")
+plot((Risk.group) ~ as.factor(`2_k`), data = GeneWKM)
+KMRGfit <- glm(as.factor(Risk.group) ~ as.factor(`2_k`), data = GeneWKM, family = "binomial")
 
 summary(KMRGfit)
 
 KMRGfit$coefficients[2]
 
+
 ```
-
-
-### UNFINISHED
+logistic regression was used to test a relationship between Risk group and phenotype group. While a large difference was identified between groups, the result was highly insignificant.
 
 ## Aim 2
 
@@ -330,6 +328,7 @@ tenthquantiles <- quantile(weights, probs = seq(0,1,0.10))
 high10 <- tall[tall$V1 > tenthquantiles[10],]$names
 low10 <- tall[tall$V1 < tenthquantiles[2],]$names
 
+
 #applying 5% quantiles to narrow selection
 twentyquantiles <- quantile(weights, probs = seq(0,1,0.05))
 
@@ -356,13 +355,10 @@ low1000 <- tall[tall$V1 < onethousandthquantiles[2],]$names
 
 SVM
 
-  Weights were divded into quartiles deciles, . Genes expressed in the outer two quantiles at the 25%, 20%, 1% and 0.1%. The identified genes in each quantiles are listed below.
+  Weights were divded into quartiles deciles, . Genes expressed in the outer two quantiles at the 25%, 20%, 1% and 0.1%. The identified genes in the .1% quartile were not found to be associated with known AML gnes. Higher quartiles may, simply by virtue of size. It may be that, combined with other approaches an effective way to use ML to identify significant variants could be found.
+
   
-  
 
 
-## Aim 3 (low priority, should include in aim 1 in rewrite)
-
-Test correlation between identified AML phenotypes and Risk Groups
 
 
