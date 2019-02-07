@@ -11,12 +11,12 @@
 
 11 genes deemed important by all three models
 
-![Screenshot](./pictures/modeling.png)
+![Screenshot](./pictures/chart.png)
 
 Lasso run again until conversion, features reduced to **174 features**. 15 shared "important" features
 between XGBoost and Lasso. Of those 15, 6 belong to original 11, 9 novel.
 
-![Screenshot](./pictures/post.png)
+![Screenshot](./pictures/second_lasso.png)
 
 Those 20 genes warrant further investigation.
 
