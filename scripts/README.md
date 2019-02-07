@@ -1,9 +1,9 @@
 # Machine Learning to identify key genes in AML
 
 ## TLDR
-Data cleaning: merge clinical, manifest, and ensemble gene info for three AML, WT and AML
+1) Data cleaning: merge clinical, manifest, and ensemble gene info for three AML, WT and AML
 
-Modeling: modeling on AML data to predict status of "Low Risk" vs. "Not Low Risk" (Standard + High) - if patient shows up more than once, use earlier one
+2) Modeling: modeling on AML data to predict status of "Low Risk" vs. "Not Low Risk" (Standard + High) - if patient shows up more than once, use earlier one
 
 - Lasso Logistic Regression on all 20,000+ features (gene ensembles) --> reduced to 3212
 - XGBoost Classifier on all 20,000+ features (gene ensembles) --> 332 "important" features
