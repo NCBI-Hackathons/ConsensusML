@@ -441,16 +441,23 @@ cormap.tile.name <- "cortest_tile.jpg"
 cormap.tri.name <- "cortest_triangle.jpg"
 hmdeg.name <- "hmdeg_targetaml.jpg"
 hmdeg.rowanno.name <- "hmdeg_rowanno_targetaml.jpg"
+hmdeg.traintest.name <- "hmdeg_traintest_targetaml.jpg"
 
 # load data 
 load(paste0(seobj.dir, sys.sep, degseset.name))
 
 ```
 
-```{r summarizeclin}
+# Data Preparation
+Summarized Experiment objects were created from TARGET AML clinical and RNA-seq data obtained from GDC. Gene counts from STAR 2-Pass alignment were converted using TMM into log counts-per-million scale. Differentially Expressed Genes were determined comparing classifier sample groups in the training sample subset only. Genes were pre-filered on whether at least 5 samples (set-wide) showing counts per mission greater than or equal to 1. 
+
+# Data Summaries and Pre-filtering Samples with Risk Group Available
+```{r summarizeclin, eval=TRUE, echo=TRUE}
 
 # summarise the se object
+message("dim se object")
 dim(deg.seset)
+# [1] 1937  145
 
 message("table of risk group var")
 table(deg.seset$Risk.group)
@@ -468,7 +475,6 @@ table(deg.seset$deg.risk, deg.seset$Risk.group)
 #  0     0  60        0       0
 #  1     8   0       69       0
 #  NA    0   0        0       8
-
 
 degfilt.se <- deg.seset[,which(deg.seset$deg.risk %in% c(0,1))] # subset on deg risk group available
 message("dim of filtered se object")
@@ -495,53 +501,127 @@ chisq.test(table(degfilt.se$binom.age,degfilt.se$deg.risk)) #  p-value = 0.6591,
 
 ```
 
-```{r summarizedeg}
+# Differentially Expressed Genes Summary
+```{r summarizedeg, eval=TRUE, echo=TRUE}
 
 allgenes <- rownames(degfilt.se)
-genemeans.0 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==0]))
-genemeans.1 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==1]))
-lfc.deg <- log2(genemeans.1/genemeans.0)
+genemeans.0 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==0]), na.rm=T)
+genemeans.1 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==1]), na.rm=T)
+lfc.deg <- log2((genemeans.1/(genemeans.0+0.01))+0.01)
 
 message("summary of log2FC")
 summary(lfc.deg)
-#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# -4.963  -0.594   1.299   1.156   2.252   9.414
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# -8.4322 -1.0946 -0.6335 -0.4750  0.4029  6.7912     360
 
-length(allgenes[which(lfc.deg < -4)]) # 4
-length(allgenes[which(lfc.deg < -2)]) # 72
-length(allgenes[which(lfc.deg < 0)]) # 699
-length(allgenes[which(lfc.deg > 0)]) # 1238
-length(allgenes[which(lfc.deg > 2)]) # 585
-length(allgenes[which(lfc.deg > 4)]) # 165
+length(allgenes[which(lfc.deg < -4)]) # 27
+length(allgenes[which(lfc.deg < -2)]) # 144
+length(allgenes[which(lfc.deg < 0)]) # 1165
+length(allgenes[which(lfc.deg > 0)]) # 412
+length(allgenes[which(lfc.deg > 2)]) # 84
+length(allgenes[which(lfc.deg > 4)]) # 14
 
 # plot
 plot(density(lfc.deg))
 hist(lfc.deg, breaks = 50)
-plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.adj.bh),
+plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.unadj),
      xlab="Log2FC(NotLow_1/Low_0)",
      ylab="-1*log10(padj)")
 
 ```
 
-```{r degheatmap}
+# Heatmap Data Set Summaries
+```{r degheatmap, eval=TRUE, echo=FALSE}
 require(ComplexHeatmap)
 require(circlize)
 
-# Take normally dist data as heatmap matrix
-hm_data <- as.matrix(log2(assay(degfilt.se)+0.01))
+#=======================
+# Heatmap Test vs Train
+#=======================
+# all data
+seset <- degfilt.se
+hm_data <- as.matrix(assay(seset))
+breaks=seq(min(hm_data),max(hm_data),0.1)
+hmcol = colorRamp2(breaks, colorRampPalette(c("green","black","red"))(n=length(breaks)))
+
+# train data
+seset <- degfilt.se[,degfilt.se$exptset.seahack=="train"]
+hm_data.train <- as.matrix(assay(seset)[!is.na(lfc.deg),])
 # hm col annotations can contain complex layered output and colored annotaions
-hm_colanno <- HeatmapAnnotation(show_legend = TRUE,
-                                df = data.frame(sampletype=degfilt.se$deg.risk,
-                                                gender=degfilt.se$Gender,
-                                                binom.age=degfilt.se$binom.age), 
+hm_colanno.train <- HeatmapAnnotation(show_legend = TRUE,
+                                df = data.frame(sampletype=seset$deg.risk,
+                                                gender=seset$Gender,
+                                                binom.age=seset$binom.age), 
                                 col = list(sampletype = c("0" =  "blue","1" = "red"),
                                            gender = c("Male"="black","Female"="gray"),
                                            binom.age = c("young"="pink","old"="green")),
                                 name = "Sample Type",
                                 annotation_height = unit(c(0.5, 0.5, 0.5), "cm"))
+hm.train <- Heatmap(hm_data.train,
+        col=hmcol,
+        cluster_columns = TRUE,
+        show_heatmap_legend = TRUE,
+        top_annotation = hm_colanno.train,
+        name="tmm_log_cpm",
+        show_row_names = FALSE,
+        show_column_names = FALSE,
+        column_title = "Train", 
+        column_dend_reorder = TRUE,
+        row_dend_reorder = TRUE,
+        heatmap_legend_param = list(color_bar = "continuous"),
+        row_title = "DEGs")
+
+# test data
+seset <- degfilt.se[,degfilt.se$exptset.seahack=="test"]
+hm_data.test <- as.matrix(assay(seset)[!is.na(lfc.deg),])
+# hm col annotations can contain complex layered output and colored annotaions
+hm_colanno.test <- HeatmapAnnotation(show_legend = TRUE,
+                                df = data.frame(sampletype=seset$deg.risk,
+                                                gender=seset$Gender,
+                                                binom.age=seset$binom.age), 
+                                col = list(sampletype = c("0" =  "blue","1" = "red"),
+                                           gender = c("Male"="black","Female"="gray"),
+                                           binom.age = c("young"="pink","old"="green")),
+                                name = "Sample Type",
+                                annotation_height = unit(c(0.5, 0.5, 0.5), "cm"))
+hm.test <- Heatmap(hm_data.test,
+        col=hmcol,
+        cluster_columns = TRUE,
+        show_heatmap_legend = TRUE,
+        top_annotation = hm_colanno.test,
+        name="tmm_log_cpm",
+        show_row_names = FALSE,
+        show_column_names = FALSE,
+        column_title = "Test", 
+        column_dend_reorder = TRUE,
+        row_dend_reorder = TRUE,
+        heatmap_legend_param = list(color_bar = "continuous"),
+        row_title = "DEGs")
+draw(hm.test+hm.train)
+
+#jpeg(paste0(figs.dir, sys.sep, hmdeg.traintest.name), 15, 5, units="in", res=400)
+#draw(hm.test+hm.train)
+#dev.off()
+
+#==================
+# Heatmap All Data
+#==================
+# Take normally dist data as heatmap matrix
+hm_data <- as.matrix(assay(degfilt.se))
+# hm col annotations can contain complex layered output and colored annotaions
+hm_colanno <- HeatmapAnnotation(show_legend = TRUE,
+                                df = data.frame(sampletype=degfilt.se$deg.risk,
+                                                gender=degfilt.se$Gender,
+                                                binom.age=degfilt.se$binom.age,
+                                                subset=degfilt.se$exptset.seahack), 
+                                col = list(sampletype = c("0" =  "blue","1" = "red"),
+                                           gender = c("Male"="black","Female"="gray"),
+                                           binom.age = c("young"="pink","old"="green"),
+                                           subset = c("test" = "orange", "train" = "purple")),
+                                name = "Sample Type",
+                                annotation_height = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 breaks=seq(min(hm_data),max(hm_data),0.1)
 hmcol = colorRamp2(breaks,colorRampPalette(c("green","black","red"))(n=length(breaks)))
-
 hm <- Heatmap(hm_data,
         col=hmcol,
         cluster_columns = TRUE,
@@ -556,40 +636,20 @@ hm <- Heatmap(hm_data,
         heatmap_legend_param = list(color_bar = "continuous"),
         row_title = "DEGs")
 
-jpeg(paste0(figs.dir, sys.sep, hmdeg.name), 10, 7, units="in", res=400)
 hm
-dev.off()
 
-# inc row anno
-genemeans.0 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==0]))
-genemeans.1 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==1]))
-lfc.deg <- log2(genemeans.1/genemeans.0)
-
-lfc.cat <- ifelse(lfc.deg <= -4, "< -4",
-                  ifelse(lfc.deg <= -2 & lfc.deg > -4,"< -2",
-                         ifelse(lfc.deg <= 0 & lfc.deg > -2, "< 0",
-                                ifelse(lfc.deg > 0 & lfc.deg < 2, "> 0",
-                                       ifelse(lfc.deg >= 2 & lfc.deg < 4, "> 2",
-                                              ifelse(lfc.deg > 4, "> 4","NA"))))))
-table(lfc.cat)
-# < -2 < -4  < 0  > 0  > 2  > 4 
-#  68    4  627  653  420  165
-
-hm_rowanno = rowAnnotation(df = data.frame(log2FC = lfc.cat), 
-                       col = list(log2FC = c("< -4" =  "chartreuse", "< -2" = "chartreuse3", "< 0" = "chartreuse4",
-                                            "> 0" = "firebrick4", "> 2" = "firebrick3", "> 4" = "red")), 
-                       width = unit(1, "cm"))
-
-jpeg(paste0(figs.dir, sys.sep, hmdeg.rowanno.name), 10, 7, units="in", res=400)
-draw(hm + hm_rowanno)
-dev.off()
+#jpeg(paste0(figs.dir, sys.sep, hmdeg.name), 10, 7, units="in", res=400)
+#hm
+#dev.off()
 
 # transverse heatmap with log2FC
 
 ```
 
+# Correlational Map
+Note: follow up with investigation of repetitions of lasso. Do reps show different predictors retained/eliminated? Are correlated genes correlated because they share pathway/network/annotation with selected predictor?
 
-```{r degcormap}
+```{r degcormap, eval=FALSE, echo=FALSE}
 # ref: http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
 
 require(reshape2)
@@ -664,9 +724,25 @@ ggplot(data = melted_cormat, aes(Var2, Var1, fill = value)) +
 
 ```
 
+# Machine Learning: Model Fitting and Assessment
 
-# Machine Learning
-
-## SVM
 ```{r svm}
 ```
+
+```{r lasso}
+```
+
+```{r random_forest_noboost}
+```
+
+```{r random_forest_withboost}
+```
+
+```{r automl}
+```
+
+# Machine Learning: Predictive Features Consensus
+
+# Results Summaries
+
+# R Env log

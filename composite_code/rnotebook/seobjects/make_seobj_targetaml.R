@@ -35,7 +35,64 @@ degseset.name <- "seset_degseahack_targetaml.rda"
 maeobj.name <- "mae_targetaml.rda"
 
 # load data 
-#
+clinical <- read.csv(paste0(data.dir,sys.sep,clinical.tablename), 
+                     row.names = 1, stringsAsFactors = F)
+
+counts <- read.csv(paste0(data.dir, sys.sep, gene.counts.tablename), 
+                   row.names = 1, stringsAsFactors = F)
+tmm <- read.csv(paste0(data.dir, sys.sep, tmm.counts.tablename), 
+                row.names = 1, stringsAsFactors = F)
+degtable <- read.csv(paste0(data.dir,sys.sep,deg.tablename), 
+                     row.names = 1, stringsAsFactors = F)
+
+testsamp.prior = read.csv(paste0(data.dir,sys.sep,testset.prior.name), row.names=1,
+                          stringsAsFactors = F)
+
+#============
+# Preprocess
+#============
+# filter clinical variables
+clinical.filt = clinical[,c(1:84)]
+
+# filter AML clinical samples on tissue type (retain primary only)
+clinical.filt = clinical.filt[clinical.filt$Diagnostic.ID %in% c("03A","09A"),]
+dim(clinical.filt)
+# check for repeated patient ids
+summary(as.data.frame(table(clinical.filt$TARGET.USI))[,2]) # max = 1, no repeated ids
+
+# apply sample filters to expr data
+cnames.counts = colnames(counts)
+counts.filt = counts[,grepl(".*\\.20\\..*",cnames.counts)] # project id filt
+patidfilt = substr(colnames(counts.filt),11,16) %in% substr(clinical.filt$TARGET.USI,11,16) # patient id filt
+counts.filt = counts.filt[,patidfilt]
+tisstypefilt = substr(colnames(counts.filt),18,20) %in% clinical.filt$Diagnostic.ID # tissue sample type filt
+counts.filt = counts.filt[,tisstypefilt]
+# match clinical and counts data
+counts.filt = counts.filt[,order(match(substr(colnames(counts.filt),11,16),
+                                       substr(clinical.filt$TARGET.USI,11,16)
+)
+)
+]
+identical(substr(colnames(counts.filt),11,16),substr(clinical.filt$TARGET.USI,11,16)) # true
+identical(substr(colnames(counts.filt),18,20),clinical.filt$Diagnostic.ID) # true
+
+# add train/test data info
+clinical.filt$exptset.seahack <- ifelse(clinical.filt$TARGET.USI %in% testsamp.prior[,1],
+                                        "test", "train")
+table(clinical.filt$exptset.seahack)
+
+#======================
+# Normalize Expression
+#======================
+counts.sub <- counts.filt
+dge <- DGEList(counts = counts.sub)
+samp <- ncol(counts.sub)
+#Note: used a minium # of samples as 5 to ensure that normalized values will include all DEGs identified with the training set counts. Higher thresholds lead to genes included in DEGs but excluded in the "master" TMM normalized counts. 
+keep.dge <- rowSums(cpm(dge) >= 1) >= 5
+dge <- dge[keep.dge,] #subset for those genes with cmp >= 1 per gene in AML samples
+dge <- calcNormFactors(dge) #Do TMM normalization
+dim(dge) # 18243 genes meet these criteria in AML only
+cpm <- cpm(dge,log = TRUE, prior.count = 1) # all expression as counts per million at filtered genes
 
 #=================================
 # Get Gene Annotations and Ranges
@@ -68,18 +125,20 @@ save(counts.genes.grdf, file=paste0(data.dir, sys.sep, geneanno.name))
 
 # se experiments using filtered genes
 length(intersect(rownames(counts.filt), counts.genes.grdf$countsdf.id)) # 54713
-length(intersect(counts.genes.grdf$countsdf.id, rownames(dge))) # 16696
+length(intersect(counts.genes.grdf$countsdf.id, rownames(dge))) # 17637
 
 counts.se <- counts.filt[rownames(counts.filt) %in% counts.genes.grdf$countsdf.id,]
-dge.se <- dge[rownames(dge) %in% counts.genes.grdf$countsdf.id,]
+cpm.se <- cpm[rownames(cpm) %in% counts.genes.grdf$countsdf.id,]
+dim(cpm.se)
+# [1] 17637   145
 
 # order genes for counts se
 ganno.counts <- counts.genes.grdf[order(match(counts.genes.grdf$countsdf.id,
                                               rownames(counts.se))),]
 identical(counts.genes.grdf$countsdf.id, rownames(counts.se))
-ganno.tmm <- counts.genes.grdf[counts.genes.grdf$countsdf.id %in% rownames(dge.se),]
-ganno.tmm <- ganno.tmm[order(match(ganno.tmm$countsdf.id,rownames(dge.se))),]
-identical(ganno.tmm$countsdf.id,rownames(dge.se))
+ganno.tmm <- counts.genes.grdf[counts.genes.grdf$countsdf.id %in% rownames(cpm.se),]
+ganno.tmm <- ganno.tmm[order(match(ganno.tmm$countsdf.id,rownames(cpm.se))),]
+identical(ganno.tmm$countsdf.id,rownames(cpm.se))
 colnames(ganno.counts) <- colnames(ganno.tmm) <- c("gene.id","gene.symbol","countsdf.id","seqnames","start","end")
 
 ggr.counts <- makeGRangesFromDataFrame(ganno.counts, 
@@ -110,29 +169,30 @@ counts.seset <- SummarizedExperiment(assays = as.matrix(counts.se),
 )
 
 # Gene TMM SE object
-identical(ggr.tmm$countsdf.id, rownames(dge.se)) # TRUE
-identical(names(ggr.tmm), rownames(dge.se))
-identical(substr(colnames(dge.se),11,16), 
+identical(ggr.tmm$countsdf.id, rownames(cpm.se)) # TRUE
+identical(names(ggr.tmm), rownames(cpm.se))
+identical(substr(colnames(cpm.se),11,16), 
           substr(clinical.filt$TARGET.USI,11,16)) # TRUE
-tmm.seset <- SummarizedExperiment(assays = as.matrix(dge.se),
+tmm.seset <- SummarizedExperiment(assays = as.matrix(cpm.se),
                                   rowRanges = ggr.tmm,
                                   colData = DataFrame(clinical.filt,
-                                                      row.names = colnames(dge.se)
+                                                      row.names = colnames(cpm.se)
                                   ),
                                   metadata = list(dataset = "TARGET_AML",
                                                   assay_source = "GDC",
                                                   genome_build = "hg19",
-                                                  normalization_strategy = "TMM, log2_normcounts, limma, edgeR"))
+                                                  normalization_strategy = "TMM, log_cpm, limma, edgeR"))
 
 # DEG TMM SE object
 deglist = rownames(degtable)
 length(intersect(deglist, counts.genes.grdf$countsdf.id)) # 1937 of 1998
 degfilt = deglist[deglist %in% counts.genes.grdf$countsdf.id]
 ggr.deg = ggr.counts[names(ggr.counts) %in% degfilt]
-deg.assay <- counts.se[rownames(counts.se) %in% degfilt,]
+# deg.assay <- counts.se[rownames(counts.se) %in% degfilt,]
+deg.assay <- cpm.se[rownames(cpm.se) %in% degfilt,]
 ggr.deg <- ggr.deg[order(match(names(ggr.deg), rownames(deg.assay)))]
 identical(names(ggr.deg), rownames(deg.assay)) # TRUE
-identical(substr(colnames(dge.se),11,16), 
+identical(substr(colnames(cpm.se),11,16), 
           substr(clinical.filt$TARGET.USI,11,16)) # TRUE
 # add the deg statistics to gene annotation
 degstats = degtable[rownames(degtable) %in% degfilt,]
@@ -153,7 +213,7 @@ deg.seset <- SummarizedExperiment(assays = as.matrix(deg.assay),
                                   metadata = list(dataset = "TARGET_AML",
                                                   assay_source = "GDC",
                                                   genome_build = "hg19",
-                                                  normalization_strategy = "DEG RiskGroup, Low=0 notLow=1, reference: Low, TMM_log2_normcounts, voom_DE function"))
+                                                  normalization_strategy = "DEGs_trainset_binaryrisk, Low=0 notLow=1, reference: Low, tmm_log_cpm, voom_DE function"))
 
 # Save new SE objects
 save(counts.seset, file=paste0(seobj.dir, sys.sep, countsseset.name))
@@ -163,7 +223,6 @@ save(deg.seset, file=paste0(seobj.dir, sys.sep, degseset.name))
 #===============================
 # Multi Assay Experiment class
 #===============================
-
 counts.map <- data.frame(primary = colnames(counts.seset),
                          colname = colnames(counts.seset),
                          stringsAsFactors = F)
