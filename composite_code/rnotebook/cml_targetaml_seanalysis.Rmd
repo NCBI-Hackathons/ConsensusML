@@ -48,7 +48,7 @@ library(reshape2)
 # ML functions
 
 # Lasso
-glm.binom <- function(x,y,df,ref="No", train.names=NULL, test.names=NULL, 
+glm.binom <- function(x, y, df, ref="No", train.names=NULL, test.names=NULL, 
                       standardize=FALSE, splitIntoTrain=FALSE){
   # credit: Jenny Smith
   library(glmnet)
@@ -443,6 +443,18 @@ hmdeg.name <- "hmdeg_targetaml.jpg"
 hmdeg.rowanno.name <- "hmdeg_rowanno_targetaml.jpg"
 hmdeg.traintest.name <- "hmdeg_traintest_targetaml.jpg"
 
+# lasso obj 
+smlasso.resultlist.name <- "lasso_resultlist_smtest.rda"
+smlasso.resultlist.repname <- "lasso_resultlist_smtest_repnum"
+lassocoeff.figure.name <- "lasso_features.jpg"
+
+# rf obj
+rf.resultlist.name <- "rfiter-noboost_resultlist_smtest.rda"
+rf.plot2k.name <- "rf2k_featureimportance.jpg"
+rf.plot5k.name <- "rf5k_featureimportance.jpg"
+rf.plot10k.name <- "rf10k_featureimportance.jpg"
+rf.plotcomposite.name <- "rfall_noboost_featureimportance.jpg"
+
 # load data 
 load(paste0(seobj.dir, sys.sep, degseset.name))
 
@@ -646,6 +658,239 @@ hm
 
 ```
 
+# Machine Learning: Model Fitting and Assessment
+
+```{r svm}
+```
+
+```{r lasso}
+# Run lasso with glmnet
+#df is the matrix with the response and  gene expression. Patients as rownames.
+  #x is the character vector of column names for genes 
+  #y is the character vector of column names for the classifier 
+  #train is a chacter vector of patient IDs
+  #test is a chacter vector of Patient IDs. 
+#Mod.RG <- glm.binom(x = grep("^ENSG",  colnames(RG.GLM.df), value=TRUE),
+#                    y="RiskGroup.Class",
+#                    df=RG.GLM.df,
+#                    train.names = RG.GLM.df$TARGET.USI[RG.GLM.df$train_test_set=="Train"],
+#                    test.names = RG.GLM.df$TARGET.USI[RG.GLM.df$train_test_set=="Test"])
+
+#lasso.fit.rg <- glm.binom(x = gene.names, y = var.classifier, df = glm.df, 
+#                          train.names = trainset.names, test.names = testset.names)
+
+#---------------
+# SM lasso test
+#---------------
+repnum = 0
+dim(deg.seset) # [1] 1937  145
+deg.seset <- deg.seset[,!(deg.seset$deg.risk=="NA")]
+dim(deg.seset) # [1] 1937  137
+gene.names = as.character(rowData(deg.seset)$countsdf.id)
+var.classifier = deg.seset$deg.risk
+glm.df = t(assay(deg.seset))
+trainset.names = colnames(assay(deg.seset[,deg.seset$exptset.seahack=="train"]))
+testset.names = colnames(assay(deg.seset[,deg.seset$exptset.seahack=="test"]))
+#----------------------------
+x.genes = gene.names
+y = var.classifier
+df = glm.df 
+train.names = trainset.names
+test.names = testset.names
+#----------------------------
+response <- y
+predictors <- x
+y <- factor(y); names(y) <- colnames(assay(deg.seset))
+x = df[,x.genes]
+dim(x)
+contrast <- contrasts(y)
+grid <- 10^ seq(10,-2, length=100)
+standardize = FALSE
+fit <- glmnet(x[train.names,], y[train.names], family = "binomial", alpha=1, 
+              standardize = standardize, lambda = grid, intercept = FALSE)
+# use cross-validation on the training model.CV only for lambda
+if(repnum==0){
+  newseed = 2019
+  set.seed(newseed) 
+} else{
+  newseed = sample(seq(0,10000,1),1)
+  set.seed(newseed)
+}
+cv.fit <- cv.glmnet(x[train.names,], y[train.names], family = "binomial",
+                    type.logistic="modified.Newton", standardize = standardize,
+                    lambda = grid, alpha=1, nfolds = length(train.names), #LOOCV 
+                    type.measure = "class", intercept = FALSE)
+#Select lambda min.
+lambda.min <- cv.fit$lambda.min
+#predict the classes
+pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
+#find the test error
+tab <- table(pred.class,y[test.names])
+testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
+#Fit the full dataset.
+final <- glmnet(x, y,family = "binomial", standardize = standardize, 
+                lambda = grid, alpha = 1, intercept = FALSE)
+#Extract the coefficients
+coef <- predict(final, type="coefficients", s=lambda.min)
+idx <- which(!as.numeric(coef)==0)
+nonZero <- coef[idx,]
+#Results 
+smlasso.list <- list(train.names, test.names, contrast, fit, 
+                     cv.fit, tab, testError, final, nonZero, newseed)
+names(smlasso.list) <- c("training.set", "testing.set","contrast", "train.fit",
+                 "cv.fit", "confusionMatrix","test.error", "final.model", 
+                 "nonzero.coef", "seednum")
+if(repnum==0){
+  save(smlasso.list, file = paste0(data.dir, sys.sep, smlasso.resultlist.name))
+} else{
+  save(smlasso.list, file = paste0(data.dir, sys.sep, smlasso.resultlist.repname, repnum, ".rda"))
+}
+
+#-------------------------
+# Plot lasso coefficients
+#-------------------------
+# goi (retained genes with nonzero coeff)
+lasso.goi <- names(smlasso.list$nonzero.coef)
+# gene symbols
+lasso.goi.symbols <- rowData(deg.seset[lasso.goi,])$gene.symbol
+#data.frame(lasso.goi, lasso.goi.symbols, as.numeric(smlasso.list$nonzero.coef))
+
+# make barplot
+bpdat <- smlasso.list$nonzero.coef
+gene.order <- order(bpdat)
+bpdat <- bpdat[gene.order]
+bp.gene.symbols <- lasso.goi.symbols[gene.order]
+bpcol <- ifelse(bpdat<0,"blue","red")
+
+jpeg(paste0(figs.dir, sys.sep, lassocoeff.figure.name),8,5,units="in",res=400)
+par(oma=c(5,2,2,2))
+barplot(bpdat, col=bpcol, 
+        names.arg = bp.gene.symbols, 
+        las = 2, 
+        ylim = c(-0.1,0.3),
+        main = "Lasso Features")
+mtext(text="Coefficient",side=2,line=0,outer=TRUE,cex=1)
+mtext(text="Gene Symbol",side=1,line=2,outer=TRUE,cex=1)
+
+dev.off()
+
+
+```
+
+```{r random_forest_noboost}
+require(randomForest)
+
+set.seed(20)
+train.classes <- ndtr[,1]; train.set <- ndtr[,c(2:ncol(ndtr))]
+
+train.all <- ndtr; 
+colnames(train.all) <- c("class",paste0("var",seq(2,ncol(train.all),1)))
+train.all$class <- as.factor(train.all$class)
+
+test.all <- ndte; 
+colnames(test.all) <- c("class",paste0("var",seq(2,ncol(test.all),1)))
+test.all$class <- as.factor(test.all$class)
+test.vars <- test.all[,c(2:ncol(test.all))]
+# NTrees = 10
+rf10 <- randomForest(class ~ .,
+                     data=train.all,
+                     ntree=10,
+                     proximity=TRUE)
+
+# select training data
+rfdat.train <- as.data.frame(t(assay(deg.seset[,deg.seset$exptset.seahack=="train"])))
+# append binom classes
+rfdat.train$class <- as.factor(deg.seset[,deg.seset$exptset.seahack=="train"]$deg.risk)
+# form test set as with train set
+rfdat.test <- as.data.frame(t(assay(deg.seset[,deg.seset$exptset.seahack=="test"])))
+#rfdat.test$class <- as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk)
+
+rf2k <- randomForest(class ~ .,
+                     data = rfdat.train,
+                     ntree = 2000,
+                     proximity = TRUE)
+
+rf5k <- randomForest(class ~ .,
+                     data = rfdat.train,
+                     ntree = 5000,
+                     proximity = TRUE)
+
+rf10k <- randomForest(class ~ .,
+                     data = rfdat.train,
+                     ntree = 10000,
+                     proximity = TRUE)
+# assess model fit
+pred.rf2k <- predict(rf2k, rfdat.test,'response')
+pred.rf5k <- predict(rf5k, rfdat.test,'response')
+pred.rf10k <- predict(rf10k, rfdat.test,'response')
+
+table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf2k)
+#       predicted
+#observed  0  1
+#       0 20  2
+#       1  1 21
+cm.2k <- table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf2k)
+
+table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf5k)
+#       predicted
+#observed  0  1
+#       0 19  3
+#       1  1 21
+cm.5k <- table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf5k)
+
+table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf10k)
+#       predicted
+#observed  0  1
+#       0 19  3
+#       1  1 21
+cm.10k <- table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf10k)
+
+rf.returnlist <- list('rf2k.results'=list('fitmodel'=rf2k,'conf.matrix'=cm.2k),
+                      'rf5k.results'=list('fitmodel'=rf5k,'conf.matrix'=cm.5k),
+                      'rf10k.results'=list('fitmodel'=rf10k,'conf.matrix'=cm.10k))
+save(rf.returnlist, file=paste0(data.dir, sys.sep, rf.resultlist.name))
+
+# rf plots
+
+
+# names(bpi) <- colnames(rfdat.train)[c(2:ncol(rfdat.train))]
+# gene symbols
+
+jpeg(paste0(figs.dir, sys.sep, rf.plotcomposite.name),8,10,units="in",res=400)
+par(oma=c(5,5,2,1),mfrow=c(3,1))
+import.cutoff = 0.2
+rfall <- list(rf2k, rf5k, rf10k)
+rftitles <- c("2,000 trees", "5,000 trees", "10,000 trees")
+for(i in 1:length(rfall)){
+  bpi <- as.vector(round(importance(rfall[[i]]), 2))
+  names(bpi) <- rowData(deg.seset)$gene.symbol
+  bpi <- bpi[order(bpi)]
+  bpi <- bpi[bpi>import.cutoff]
+  barplot(bpi, las=2, cex.names = 0.7, main=rftitles[i])
+  if(i == 2){
+    mtext("Importance",side=2,line=4,cex=1)
+  }
+  if(i == 3){
+    mtext(paste0("Top Features (>",import.cutoff," importance)"), side=1, line=7, cex=1)
+  }
+}
+dev.off()
+
+```
+
+```{r random_forest_withboost}
+```
+
+```{r automl}
+```
+
+# Machine Learning: Checking Correlation with Retained Genes
 # Correlational Map
 Note: follow up with investigation of repetitions of lasso. Do reps show different predictors retained/eliminated? Are correlated genes correlated because they share pathway/network/annotation with selected predictor?
 
@@ -655,32 +900,95 @@ Note: follow up with investigation of repetitions of lasso. Do reps show differe
 require(reshape2)
 require(ggplot2)
 
-# genes of interest:
-
-#----------------------------
-# calculate cor with prefilt
-#----------------------------
+# Corr data, full dataset
 cormat <- round(cor(t(assay(degfilt.se)), method="spearman"),3)
-
 melted_cormat <- melt(cormat)
-# hist(melted_cormat$value, breaks=50)
+# define cutoffs
+qcorcoeff.pos <- quantile(melted_cormat[melted_cormat$value>0,]$value,seq(0,1,0.05))
+qcorcoeff.neg <- quantile(melted_cormat[melted_cormat$value<0,]$value,seq(0,1,0.05))
+pos.cut <- as.numeric(qcorcoeff.pos[20])
+neg.cut <- as.numeric(qcorcoeff.neg[2])
 
-summary(melted_cormat$value)
-#   Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-#-0.73600 -0.13000  0.11300  0.09803  0.32600  1.00000
+#--------------------------
+# cordata from lasso model
+#--------------------------
+# make nested lists of correlated genes
+corlist.lasso <- list()
+lasso.goi <- names(smlasso.list$nonzero.coef)
+# corgoi.vec <- c(lasso.goi)
+for(i in 1:length(lasso.goi)){
+  mc.goi <- melted_cormat[melted_cormat$Var1==lasso.goi[i] & 
+                            (melted_cormat$value>=pos.cut | 
+                               melted_cormat$value<=neg.cut),]
+  # append.goi <- unique(mc.goi$Var2)
+  # corgoi.vec <- unique(c(corgoi.vec, append.goi))
+  # message("new length cargoi.list = ", length(corgoi.vec))
+  
+  corlist.lasso[[lasso.goi[i]]] <- c(unique(as.character(mc.goi$Var2)))
+  
+  message(" gene ",lasso.goi[i]," showed n = ",
+          length(unique(as.character(mc.goi$Var2))),
+          " correlated genes")
+}
 
-summary(abs(melted_cormat$value))
-# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#  0.000   0.123   0.236   0.248   0.356   1.000
+#-----------------
+# cor plots loop
+#-----------------
+library(reshape2)
+library(ggplot2)
 
-qcor <- quantile(abs(melted_cormat$value), seq(0,1,0.1))
-qcor
-#   0%   10%   20%   30%   40%   50%   60%   70%   80%   90%  100% 
-# 0.000 0.050 0.099 0.146 0.191 0.236 0.282 0.330 0.385 0.458 1.000
+  
+# Get lower triangle of the correlation matrix
+get_lower_tri<-function(cormat){
+    cormat[upper.tri(cormat)] <- NA
+    return(cormat)
+  }
+# Get upper triangle of the correlation matrix
+get_upper_tri <- function(cormat){
+  cormat[lower.tri(cormat)]<- NA
+  return(cormat)
+  }
 
-# 99.9th quantile filt
-qcor <- quantile(abs(melted_cormat$value), seq(0,1,0.001))
-cormatfilt <- melted_cormat[abs(melted_cormat$value) >= as.numeric(qcor[length(qcor)-1]),]
+cplots = list()
+for(i in 1:length(corlist.lasso)){
+  # form data matrix
+  mcplot <- melted_cormat[melted_cormat$Var1==names(corlist.lasso)[i] &
+                            melted_cormat$Var2 %in% corlist.lasso[[i]],]
+  cormati <- round(cor(t(assay(degfilt.se[unique(c(mcplot$Var1,mcplot$Var2)),])), method="spearman"),3)
+  upper_tri <- get_upper_tri(cormati)
+  melted_cormat <- melt(upper_tri, na.rm = TRUE)
+  
+  
+  
+  # make correlation heatmap
+  ggi <- ggplot(data = melted_cormat, aes(Var2, Var1, fill = value)) +
+          geom_tile(color = "white") +
+          scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                         midpoint = 0, limit = c(-1,1), space = "Lab", 
+                         name="Spearman\nCorrelation") +
+          theme_minimal() + 
+          theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+          size = 12, hjust = 1)) +
+          coord_fixed()
+  ggi
+  
+  cplots <- list(cplots, ggi)
+}
+  
+  # plot and save heatmap
+  plotnamei = paste0(figs.dir, sys.sep, "cortriplot_lassocoeff_", gsub("\\..*","",names(corlist.lasso)[i]), ".tiff")
+  pdf(plotnamei, 20, 20, units="in", res=400)
+  
+  dev.off()
+  
+  message("finished gene ",i)
+}
+
+jpeg(paste0(figs.dir, sys.sep, cormap.tile.name), 10, 10, units="in", res=400)
+ggplot(data = cormatfilt, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+
+
 
 #-----------
 # tile plot
@@ -722,23 +1030,6 @@ ggplot(data = melted_cormat, aes(Var2, Var1, fill = value)) +
     size = 12, hjust = 1)) +
  coord_fixed()
 
-```
-
-# Machine Learning: Model Fitting and Assessment
-
-```{r svm}
-```
-
-```{r lasso}
-```
-
-```{r random_forest_noboost}
-```
-
-```{r random_forest_withboost}
-```
-
-```{r automl}
 ```
 
 # Machine Learning: Predictive Features Consensus
