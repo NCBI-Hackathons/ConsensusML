@@ -5,10 +5,6 @@
 
 
 catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALSE, sep="\t"){
-  #credit: Jenny Smith
-  # Purpose: Concatenate the expression data-sets downloaded from TCGA/TARGET from GDC or any patient level data
-  #eg. each individual patient has a single expression-file 
-  
   library(magrittr)
   options(stringsAsFactors = FALSE)
   #filenames is a character vector of all filenames. 
