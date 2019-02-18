@@ -1,0 +1,672 @@
+---
+title: "Discovery of Acute Myeloid Leukemia Biomarkers using Ensemble Machine Learning"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+require(knitr)
+# knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),
+                      tidy=TRUE, 
+                      fig.align='center', 
+                      fig.height=5, 
+                      fig.width=8, 
+                      dpi = 600,
+                      echo=FALSE,
+                      eval=TRUE)
+options(stringsAsFactors = FALSE)
+```
+
+```{r libraries, eval=TRUE, echo=FALSE}
+# dependency libraries
+library(plyr)
+library(mlr)
+library(magrittr)
+library(ggplot2)
+library(EnsDb.Hsapiens.v75)
+library(glmnet)
+library(ROSE)
+library(knitr)
+library(stringr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(limma)
+library(edgeR)
+library(MLSeq)
+library(DESeq2)
+library(xlsx)
+library(VennDiagram)
+library(SummarizedExperiment)
+library(GenomicRanges)
+library(circlize)
+library(reshape2)
+
+```
+
+```{r mlfunctions, eval=FALSE}
+# ML functions
+
+# Lasso
+glm.binom <- function(x,y,df,ref="No", train.names=NULL, test.names=NULL, 
+                      standardize=FALSE, splitIntoTrain=FALSE){
+  # credit: Jenny Smith
+  library(glmnet)
+  #df is the matrix with the response and  gene expression. Patients as rownames.
+  #x is the character vector of column names for genes 
+  #y is the character vector of column names for the classifier 
+  #train is a chacter vector of patient IDs
+  #test is a chacter vector of Patient IDs. 
+  
+  response <- y
+  predictors <- x
+  
+  #check this that referece should be the first level in glmnet package
+  #Set-up the x and y matrices 
+  y <- factor(df[,y])
+  y <- relevel(y,ref = ref)  %>% set_names(rownames(df))
+  x <- as.matrix(df[,x]) #NOTE: for categorical predictors data, should use model.matrix 
+  
+  
+  if (any(c(is.na(y), is.na(x)))) {
+    print("There Are Missing Values.")
+    return(list(x=x,y=y))
+  }
+  
+  #Check the reference level of the response.
+  contrast <- contrasts(y)
+
+  if(splitIntoTrain){
+    #Use validation set approach. split observations into approx. equal groups.
+    set.seed(1)  
+    train <- sample(c(TRUE,FALSE), nrow(x), replace = TRUE)
+    test <- (!train)
+  
+    train.names <- rownames(df)[train]
+    test.names <- rownames(df)[test]
+  }
+
+
+  #grid of lambda values to test.
+  grid <- 10^ seq(10,-2, length=100)
+    
+  #training model.
+  fit <- glmnet(x[train.names,], y[train.names],
+                family = "binomial",
+                alpha=1,
+                standardize = standardize, 
+                lambda = grid, 
+                intercept = FALSE)
+
+  #use cross-validation on the training model.CV only for lambda
+  set.seed(2019) 
+  cv.fit <- cv.glmnet(x[train.names,], y[train.names],
+                  family = "binomial",
+                  type.logistic="modified.Newton", 
+                  standardize = standardize,
+                  lambda = grid,
+                  alpha=1,
+                  nfolds = length(train.names), #LOOCV 
+                  type.measure = "class", 
+                  intercept = FALSE)
+
+  #Select lambda min.
+  lambda.min <- cv.fit$lambda.min
+
+  #predict the classes
+  pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
+
+  #find the test error
+  tab <- table(pred.class,y[test.names])
+  testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
+
+  #Fit the full dataset.
+  final <- glmnet(x, y,family = "binomial",
+                  standardize = standardize, 
+                  lambda = grid,
+                  alpha = 1,
+                  intercept = FALSE)
+
+  #Extract the coefficients
+  coef <- predict(final, type="coefficients", s=lambda.min)
+  idx <- which(coef != 0)
+  nonZero <- coef[idx,]
+
+  #Results 
+  list <- list(train.names, test.names, contrast, fit, cv.fit,tab,testError, final, nonZero)
+  names(list) <- c("training.set", "testing.set","contrast", "train.fit",
+                   "cv.fit", "confusionMatrix","test.error", "final.model", "nonzero.coef")
+  return(list)
+  
+}
+
+# SVM
+runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
+                   testset,testclasses, weightfilt=FALSE){
+  # credit : Sean Maden
+  # run SVM optimization
+  # Arguments
+  #   * seed : set seed (int) for randomization
+  #   * kerneltype : (str) type of kernel for SVM, either 'linear' or 'gaussian'
+  #   * trainset : training dataset (excluding sample classes)
+  #   * trainclasses : classes for training sampels (vector) with 1:1 correspondence 
+  #       with trainset rows
+  #   * testset : test data (data frame or matrix), excluding classes
+  #   * testclasses : classes for test samples (vector), with 1:1 row:pos correspondence
+  #   * weightfilt : (FALSE or numeric) top percentage weights to use in model 
+  #       (if FALSE, then all weights used) 
+  # Returns
+  #   * rl (list) : list containing model fitted, predictions, and performacne metrics
+  require(e1071); require(ROCR)
+  rl <- list(); str.options <- ""
+  set.seed(seed)
+  ndtr <- trainset
+  ndte <- testset
+  ndtr.classes <- trainclasses
+  ndte.classes <- testclasses
+  
+  # train svm model
+  svm_model <- svm(as.factor(ndtr.classes)~., 
+                   data=ndtr, 
+                   method="C-classification", 
+                   kernel=kerneltype)
+  weightsvect <- ndtr.weights <- t(svm_model$coefs) %*% svm_model$SV
+  if(weightfilt){
+    str.options <- c(str.options,paste0("weight filt = ",weightfilt))
+    # order training data on relative weights
+    ndtr.weightsort <- ndtr[,rev(order(abs(ndtr.weights)))]
+    # select only top proportion weights
+    nweight.col = round(ncol(ndtr.weightsort)*weightfilt,0)
+    ndtr.weightfilt <- ndtr.weightsort[,c(1:nweight.col)]
+    str.options <- c(str.options,paste("cols_retained:",colnames(ndtr.weightfilt),collapse=";"))
+    # redefine training set, rerun SVM optimization
+    ndtr <- ndtr.weightfilt
+    svm_model <- svm(as.factor(ndtr.classes)~., 
+                     data=ndtr, 
+                     method="C-classification", 
+                     kernel=kerneltype)
+  } else{
+    str.options <- c(str.options,"no weight filt")
+  }
+  pred_train <- predict(svm_model, ndtr, decision.values = TRUE)
+  pred_test <- predict(svm_model, ndte, decision.values = TRUE)
+  # get performance metrics
+  pred <- prediction(as.numeric(attr(pred_test,"decision.values")),ndte.classes)
+  perf <- performance(pred,"tpr","fpr")
+  ppred <- pred_test[pred_test==1]; 
+  tppred <- ndte.classes[pred_test==1]
+  ppred <- as.numeric(as.character(ppred))
+  testprec <- length(ppred[ppred==tppred])/length(ppred) # test precision
+  rposi <- ndte.classes==1
+  rtpred <- ndte.classes[rposi]; 
+  rppred <- pred_test[rposi]
+  rppred <- as.numeric(as.character(rppred))
+  testrec <- length(rppred[rppred==1])/length(rppred) # test recall
+  
+  # return model, pred's, and performance metrics
+  rl <- list(str.options,
+             svm_model,
+             weightsvect,
+             pred_train,
+             pred_test,
+             perf,
+             tppred,
+             testprec,
+             testrec)
+  names(rl) <- c("options_string",
+                 "svm_model",
+                 "weightsvect",
+                 "predictions_train",
+                 "predictions_test",
+                 "performance_test",
+                 "TPR_test",
+                 "precision_test",
+                 "recall_test"
+  )
+  return(rl)
+  
+}
+
+```
+
+```{r utilityfunctions, eval=FALSE}
+# utilities for data summaries and visualization
+
+# differential gene expression
+voom_DE <- function(counts.df, ref, pheno){
+  # credit: Jenny Smith
+  #counts.df is a dataframe with count data, with genes as rownames
+  #pheno is a character vector with patient IDs as names, and the status for each in each group(eg pos,neg)
+  require(edgeR)
+  library(limma)
+  
+  #ensure correct order for both expn and counts.df
+  samples <- intersect(names(pheno), colnames(counts.df))
+  pheno <- pheno[samples]
+  counts.df <- counts.df[,samples]
+  
+  
+  groups <- unique(pheno)
+  groups <- c(groups[groups != ref], ref) #order so that reference is second 
+  pheno.f <- factor(pheno, levels=groups)
+
+  dge <- DGEList(counts = counts.df, group = pheno.f)
+
+  keep.dge <- rowSums(cpm(dge) >= 1) > (0.05*ncol(counts.df)) #5% of samples with CPM >= 1
+  dge <- dge[keep.dge,]
+  dge <- calcNormFactors(dge)
+
+  design <- model.matrix(~0 + pheno.f, data=dge$samples)
+  colnames(design) <- levels(pheno.f)
+  cont.matrix <- makeContrasts(contrasts = paste(groups, collapse = "-"), levels = design)
+  
+  
+  v.lv <- voom(dge, design, plot = FALSE)
+  
+
+  fit <- lmFit(v.lv, design)
+  fit <- contrasts.fit(fit, contrasts = cont.matrix)
+  fit <- eBayes(fit)
+  table <- topTable(fit, number = 20000, p.value=0.05, adjust.method="BH", sort.by="P",lfc=1)
+  
+
+
+  list <- list(design, v.lv, fit, table)
+  names(list) <- c("desingMatrix", "voomTransformation", "fit", "DEGs")
+  return(list)
+}
+
+# Survival by sample groups, plot summaries
+{
+  # credit: Sean Maden
+  ggdat <- as.data.frame(matrix(ncol=2,nrow=0))
+ggdat <- rbind(ggdat,data.frame(group='young.overallsurv',survival.time=aml.cd[class.age=='young',]$Overall.Survival.Time.in.Days))
+ggdat <- rbind(ggdat,data.frame(group='young.efsurv',survival.time=aml.cd[class.age=='young',]$Event.Free.Survival.Time.in.Days))
+ggdat <- rbind(ggdat,data.frame(group='old.overallsurv',survival.time=aml.cd[class.age=='old',]$Overall.Survival.Time.in.Days))
+ggdat <- rbind(ggdat,data.frame(group='old.efsurv',survival.time=aml.cd[class.age=='old',]$Event.Free.Survival.Time.in.Days))
+
+ggplot(ggdat, aes(x=ggdat$survival.time, col=ggdat$group))+geom_density()+
+  theme(panel.background = element_rect(fill = 'white',colour = 'black'),
+        rect = element_rect(fill = 'white',colour = "white"),
+        panel.grid.major = element_line(colour = 'grey75', size=0.2),
+        panel.grid.minor = element_line(colour = 'white'),
+        legend.position = 'right',
+        legend.background = element_rect(fill = "white", 
+                                         colour ="white"),
+        legend.key = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5))+
+  labs(color="Group Survival") + 
+  ggtitle("Survival Time by Age Classifier")
+}
+
+# Categorize DEGs
+catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALSE, sep="\t"){
+  #credit: Jenny Smith
+  # Purpose: Concatenate the expression data-sets downloaded from TCGA/TARGET from GDC or any patient level data
+  #eg. each individual patient has a single expression-file 
+  
+  library(magrittr)
+  options(stringsAsFactors = FALSE)
+  #filenames is a character vector of all filenames. 
+  #regex is a string with the pattern to extract the patient ID , eg "^.+(Kasumi|MV4)", from filenames 
+  #cols is the character vector or numeric vector of the columns to select and concatenate. 
+  
+  extract_cols <-function(filename,cols,rmFirstLine=FALSE){
+    
+    if(all(rmFirstLine & header)){
+      aFile <- readLines(filename)[-1] #remove first line with extra info. 
+      aFile <- str_split_fixed(aFile, pattern = "\t",n = length(cols)) %>% #split into a matrix
+        set_colnames(.[1,] ) %>%  #set colnames from the first line 
+        .[-1, ] #remove the header row from matrix
+    }else{
+      aFile <- read.delim(filename, sep=sep, header=header, as.is=TRUE)
+    }
+    
+    output <- list()
+    for ( k in 1:length(cols)){
+      colname <- cols[k]
+      col <- aFile[,colname]
+      output[[colname]] <- col
+    }
+    return(output)
+  }
+  
+  combineColumns <- function(extract_cols.res,colname){
+    sapply(extract_cols.res, '[[', colname)
+  }
+  
+  
+  IDs <- gsub(regex, "\\1", filenames)
+  
+  columns <- lapply(filenames,extract_cols,cols=cols, rmFirstLine=removeFirstLine) %>%
+    set_names(IDs)
+  
+  catedMatrices <- lapply(cols, combineColumns, extract_cols.res=columns)  %>%
+    set_names(cols)
+  
+  
+  return(catedMatrices)
+}
+
+# Gene summary scatter plots
+{
+  # credit: Sean Maden
+  jpeg("target-aml_gene-meanvar-diff_test-train.jpg",10,15,units="in",res=400)
+par(mfrow=c(2,1))
+col.deg <- rgb(0.2,0.5,0.2,0.3)
+col.all <- rgb(0.7,0.1,0.2,0.3)
+test.na <- is.na(test.degdiff) | is.na(test.degvar)
+plot(test.degdiff[!test.na], test.degvar[!test.na], pch=16, col=col.deg,
+     main = "TARGET AML Test Subset",xlab="Gene mean diff (Low - Not-low)", ylab="Gene var diff (Low - Not-low)")
+test.na <- is.na(test.alldiff) | is.na(test.allvar)
+points(test.alldiff[!test.na], test.allvar[!test.na], pch=1, col=col.all)
+abline(h=0,col="blue");abline(v=0,col="blue")
+legend("topright",legend=c("All Genes","DEGs"),pch=c(1,16),col=c(col.all, col.deg))
+train.na <- is.na(train.degdiff) | is.na(train.degvar)
+plot(train.degdiff[!train.na], train.degvar[!train.na], pch=16, col=col.deg,
+     main = "TARGET AML Train Subset",xlab="Gene mean diff (Low - Not-low)", ylab="Gene var diff (Low - Not-low)")
+train.na <- is.na(train.alldiff) | is.na(train.allvar)
+points(train.alldiff[!train.na], train.allvar[!train.na], pch=1, col=col.all)
+abline(h=0,col="blue");abline(v=0,col="blue")
+dev.off()
+}
+
+# Volcano plot
+volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
+  # credit : Jenny Smith
+  df <- data.frame(logFC=fit$coefficients[,1],
+                   pValue=fit$p.value[,1],
+                   FDR=p.adjust(fit$p.value[,1], method="BH"),
+                   MeanExpression=fit$Amean) %>%
+      rownames_to_column("Gene") %>%
+      mutate(Neg.Log10.P= -log10(pValue),
+             DEGs.Groups=case_when(
+                  logFC > 1.0 & pValue < 0.05 ~ "FC Greater than 2",
+                  logFC < -1.0 & pValue < 0.05 ~ "FC Less than 2",
+                  TRUE ~ "Not Significant FC"))
+
+  
+  #Select differentially expressed genes to highlight in the plot. 
+  ToHighlight <- df[abs(df$logFC) > cut.off & df$FDR < 0.05, "Gene"] 
+  idx <- which(abs(df$logFC) > cut.off & df$FDR < 0.05)
+  
+  vplot <- ggplot(df, aes(x=logFC, y=Neg.Log10.P)) + 
+    geom_point(data = filter(df, DEGs.Groups == "Not Significant FC"), 
+               mapping = aes(x=logFC, y=Neg.Log10.P, color=DEGs.Groups), alpha=0.65)  +
+    
+    geom_point(data= filter(df, grepl("2", DEGs.Groups)), 
+               mapping = aes(x=logFC, y=Neg.Log10.P, color=DEGs.Groups)) +
+    
+    geom_vline(xintercept=c(-1,1)) +
+    geom_hline(yintercept = -log10(0.05)) +
+    
+    scale_color_manual(values=c("FC Greater than 2"="red", 
+                                "FC Less than 2"="blue",
+                                "Not Significant FC"="lightgrey")) +
+    
+    theme(plot.title = element_text(hjust = 0.5, size = 20),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.border = element_rect(color = "black", fill=NA),
+          axis.text = element_text(color = "black"),
+          axis.text.x = element_text(angle = 0,hjust=0.5,vjust = 0.5, size = 26),
+          axis.text.y = element_text(size = 25),
+          axis.title = element_text(size = 30),
+          plot.margin = margin(2,2,2,2, unit = "mm")) +
+    
+    geom_text(aes(x=logFC+label.offset, y=Neg.Log10.P, label=ToHighlight),size=3.5,
+              data=df[idx, ])
+ 
+
+  return(vplot)
+  
+}
+
+```
+
+```{r globals_and_loadobj}
+# define globals
+sys.sep = "/"
+data.dir = "data"
+seobj.dir = "seobjects"
+figs.dir = "figures"
+
+countsseset.name <- "seset_genecounts_targetaml.rda"
+tmmseset.name <- "seset_genetmmfilt_targetaml.rda"
+degseset.name <- "seset_degseahack_targetaml.rda"
+maeobj.name <- "mae_targetaml.rda"
+
+cormap.tile.name <- "cortest_tile.jpg"
+cormap.tri.name <- "cortest_triangle.jpg"
+hmdeg.name <- "hmdeg_targetaml.jpg"
+hmdeg.rowanno.name <- "hmdeg_rowanno_targetaml.jpg"
+
+# load data 
+load(paste0(seobj.dir, sys.sep, degseset.name))
+
+```
+
+```{r summarizeclin}
+
+# summarise the se object
+dim(deg.seset)
+
+message("table of risk group var")
+table(deg.seset$Risk.group)
+#     High      Low Standard  Unknown 
+#       8       60       69        8
+deg.seset$deg.risk <- ifelse(deg.seset$Risk.group=="Low", 0,
+                             ifelse(deg.seset$Risk.group %in% c("Standard","High"),1,"NA"))
+message("table of binarized risk group")
+table(deg.seset$deg.risk)
+# 0  1 NA 
+# 60 77  8
+message("table of risk group x binarized risk group")
+table(deg.seset$deg.risk, deg.seset$Risk.group)
+#       High Low Standard Unknown
+#  0     0  60        0       0
+#  1     8   0       69       0
+#  NA    0   0        0       8
+
+
+degfilt.se <- deg.seset[,which(deg.seset$deg.risk %in% c(0,1))] # subset on deg risk group available
+message("dim of filtered se object")
+dim(degfilt.se)
+# [1] 1937  137
+
+# summarize gender and age at first diagnosis
+message("table of gender x binarized risk")
+table(degfilt.se$Gender,degfilt.se$deg.risk)
+#           0  1
+#   Female 29 40
+#   Male   31 37
+message("chisq test of gender x binarized risk")
+chisq.test(table(degfilt.se$Gender,degfilt.se$deg.risk)) # p-value = 0.8044, gender evenly dist
+
+degfilt.se$binom.age <- ifelse(degfilt.se$Age.at.Diagnosis.in.Days >= median(degfilt.se$Age.at.Diagnosis.in.Days), "old" ,"young")
+message("table of binarized age-at-diag x binarized risk")
+table(degfilt.se$binom.age,degfilt.se$deg.risk)
+#         0  1
+#  old   32 37
+#  young 28 40
+message("chisq results of binarized age-at-diag x binarized risk")
+chisq.test(table(degfilt.se$binom.age,degfilt.se$deg.risk)) #  p-value = 0.6591, age evenly dist
+
+```
+
+```{r summarizedeg}
+
+allgenes <- rownames(degfilt.se)
+genemeans.0 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==0]))
+genemeans.1 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==1]))
+lfc.deg <- log2(genemeans.1/genemeans.0)
+
+message("summary of log2FC")
+summary(lfc.deg)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# -4.963  -0.594   1.299   1.156   2.252   9.414
+
+length(allgenes[which(lfc.deg < -4)]) # 4
+length(allgenes[which(lfc.deg < -2)]) # 72
+length(allgenes[which(lfc.deg < 0)]) # 699
+length(allgenes[which(lfc.deg > 0)]) # 1238
+length(allgenes[which(lfc.deg > 2)]) # 585
+length(allgenes[which(lfc.deg > 4)]) # 165
+
+# plot
+plot(density(lfc.deg))
+hist(lfc.deg, breaks = 50)
+plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.adj.bh),
+     xlab="Log2FC(NotLow_1/Low_0)",
+     ylab="-1*log10(padj)")
+
+```
+
+```{r degheatmap}
+require(ComplexHeatmap)
+require(circlize)
+
+# Take normally dist data as heatmap matrix
+hm_data <- as.matrix(log2(assay(degfilt.se)+0.01))
+# hm col annotations can contain complex layered output and colored annotaions
+hm_colanno <- HeatmapAnnotation(show_legend = TRUE,
+                                df = data.frame(sampletype=degfilt.se$deg.risk,
+                                                gender=degfilt.se$Gender,
+                                                binom.age=degfilt.se$binom.age), 
+                                col = list(sampletype = c("0" =  "blue","1" = "red"),
+                                           gender = c("Male"="black","Female"="gray"),
+                                           binom.age = c("young"="pink","old"="green")),
+                                name = "Sample Type",
+                                annotation_height = unit(c(0.5, 0.5, 0.5), "cm"))
+breaks=seq(min(hm_data),max(hm_data),0.1)
+hmcol = colorRamp2(breaks,colorRampPalette(c("green","black","red"))(n=length(breaks)))
+
+hm <- Heatmap(hm_data,
+        col=hmcol,
+        cluster_columns = TRUE,
+        show_heatmap_legend = TRUE,
+        top_annotation = hm_colanno,
+        name="log2_tmm_count",
+        show_row_names = FALSE,
+        show_column_names = FALSE,
+        column_title = "Samples", 
+        column_dend_reorder = TRUE,
+        row_dend_reorder = TRUE,
+        heatmap_legend_param = list(color_bar = "continuous"),
+        row_title = "DEGs")
+
+jpeg(paste0(figs.dir, sys.sep, hmdeg.name), 10, 7, units="in", res=400)
+hm
+dev.off()
+
+# inc row anno
+genemeans.0 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==0]))
+genemeans.1 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==1]))
+lfc.deg <- log2(genemeans.1/genemeans.0)
+
+lfc.cat <- ifelse(lfc.deg <= -4, "< -4",
+                  ifelse(lfc.deg <= -2 & lfc.deg > -4,"< -2",
+                         ifelse(lfc.deg <= 0 & lfc.deg > -2, "< 0",
+                                ifelse(lfc.deg > 0 & lfc.deg < 2, "> 0",
+                                       ifelse(lfc.deg >= 2 & lfc.deg < 4, "> 2",
+                                              ifelse(lfc.deg > 4, "> 4","NA"))))))
+table(lfc.cat)
+# < -2 < -4  < 0  > 0  > 2  > 4 
+#  68    4  627  653  420  165
+
+hm_rowanno = rowAnnotation(df = data.frame(log2FC = lfc.cat), 
+                       col = list(log2FC = c("< -4" =  "chartreuse", "< -2" = "chartreuse3", "< 0" = "chartreuse4",
+                                            "> 0" = "firebrick4", "> 2" = "firebrick3", "> 4" = "red")), 
+                       width = unit(1, "cm"))
+
+jpeg(paste0(figs.dir, sys.sep, hmdeg.rowanno.name), 10, 7, units="in", res=400)
+draw(hm + hm_rowanno)
+dev.off()
+
+# transverse heatmap with log2FC
+
+```
+
+
+```{r degcormap}
+# ref: http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
+
+require(reshape2)
+require(ggplot2)
+
+# genes of interest:
+
+#----------------------------
+# calculate cor with prefilt
+#----------------------------
+cormat <- round(cor(t(assay(degfilt.se)), method="spearman"),3)
+
+melted_cormat <- melt(cormat)
+# hist(melted_cormat$value, breaks=50)
+
+summary(melted_cormat$value)
+#   Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+#-0.73600 -0.13000  0.11300  0.09803  0.32600  1.00000
+
+summary(abs(melted_cormat$value))
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  0.000   0.123   0.236   0.248   0.356   1.000
+
+qcor <- quantile(abs(melted_cormat$value), seq(0,1,0.1))
+qcor
+#   0%   10%   20%   30%   40%   50%   60%   70%   80%   90%  100% 
+# 0.000 0.050 0.099 0.146 0.191 0.236 0.282 0.330 0.385 0.458 1.000
+
+# 99.9th quantile filt
+qcor <- quantile(abs(melted_cormat$value), seq(0,1,0.001))
+cormatfilt <- melted_cormat[abs(melted_cormat$value) >= as.numeric(qcor[length(qcor)-1]),]
+
+#-----------
+# tile plot
+#-----------
+jpeg(paste0(figs.dir, sys.sep, cormap.tile.name), 10, 10, units="in", res=400)
+ggplot(data = cormatfilt, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+dev.off()
+
+#----------------
+# triangle plot
+#----------------
+# Get lower triangle of the correlation matrix
+get_lower_tri<-function(cormat){
+  cormat[upper.tri(cormat)] <- NA
+  return(cormat)
+  }
+  # Get upper triangle of the correlation matrix
+get_upper_tri <- function(cormat){
+  cormat[lower.tri(cormat)]<- NA
+  return(cormat)
+  }
+  
+upper_tri <- get_upper_tri(cormat)
+upper_tri
+
+# Melt the correlation matrix
+library(reshape2)
+melted_cormat <- melt(upper_tri, na.rm = TRUE)
+# Heatmap
+library(ggplot2)
+ggplot(data = melted_cormat, aes(Var2, Var1, fill = value)) +
+ geom_tile(color = "white") +
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+  theme_minimal() + 
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1)) +
+ coord_fixed()
+
+```
+
+
+# Machine Learning
+
+## SVM
+```{r svm}
+```
