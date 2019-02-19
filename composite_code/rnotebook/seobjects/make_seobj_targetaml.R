@@ -133,7 +133,7 @@ length(intersect(counts.genes.grdf$countsdf.id, rownames(dge))) # 17637
 counts.se <- counts.filt[rownames(counts.filt) %in% counts.genes.grdf$countsdf.id,]
 cpm.se <- cpm[rownames(cpm) %in% counts.genes.grdf$countsdf.id,]
 dim(cpm.se)
-# [1] 17637   145
+# [1] 18166   145
 
 # order genes for counts se
 ganno.counts <- counts.genes.grdf[order(match(counts.genes.grdf$countsdf.id,
