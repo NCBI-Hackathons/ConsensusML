@@ -14,7 +14,7 @@ require(SummarizedExperiment)
 require(GenomicRanges)
 require(edgeR)
 require(limma)
-require(EnsDb.Hsapiens.v75)
+require(EnsDb.Hsapiens.v86)
 require(MultiAssayExperiment)
 
 # define globals
@@ -26,7 +26,7 @@ gene.counts.tablename = "TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv" # to load
 clinical.tablename = "AML_assay_clinical.csv" # to load
 tmm.counts.tablename = "TARGET_NBL_AML_WT_RT_TMMCPM_log2_Norm_Counts_17k.csv" # to be written
 testset.prior.name = "TARGET_AML_Testing_Samples.csv"
-geneanno.name = "edb_filt_anno.rda"
+geneanno.name = "edb86_filt_anno.rda"
 deg.tablename = "TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv"
 
 countsseset.name <- "seset_genecounts_targetaml.rda"
@@ -98,7 +98,7 @@ cpm <- cpm(dge,log = TRUE, prior.count = 1) # all expression as counts per milli
 # Get Gene Annotations and Ranges
 #=================================
 # gene annotations and granges objects
-edb <- EnsDb.Hsapiens.v75 # columns(edb) to check available annotation info
+edb <- EnsDb.Hsapiens.v86 # columns(edb) to check available annotation info
 # example:
 # select(edb, keys="TP53", columns=colnames(edb),keytype="SYMBOL")
 # head(rownames(counts.filt))
@@ -111,14 +111,17 @@ genes.edb <- genes(edb)
 counts.genes.grdf <- as.data.frame(matrix(ncol=6,nrow=0))
 colnames(counts.genes.grdf) <- c("gene.id","gene.symbol","countsdf.id","chr.seqname","start","end")
 for(i in 1:nrow(counts.filt)){
-  gene.info.i = as.data.frame(genes.edb[gsub("\\..*","",rownames(counts.filt)[i])])
-  counts.genes.grdf <- rbind(counts.genes.grdf,data.frame(gene.id=rownames(gene.info.i)[1],
-                                                          gene.symbol=gene.info.i$gene_name[1],
-                                                          countsdf.id=rownames(counts.filt)[i],
-                                                          chr.seqname=gene.info.i$seqnames,
-                                                          start=gene.info.i$start,
-                                                          end=gene.info.i$end,
-                                                          stringsAsFactors = F))
+  genei = rownames(counts.filt)[i]
+  if(gsub("\\..*","",genei) %in% genes.edb$gene_id){
+    gene.info.i = as.data.frame(genes.edb[genes.edb$gene_id==gsub("\\..*","",genei)])
+    counts.genes.grdf <- rbind(counts.genes.grdf,data.frame(gene.id=rownames(gene.info.i)[1],
+                                                            gene.symbol=gene.info.i$gene_name[1],
+                                                            countsdf.id=rownames(counts.filt)[i],
+                                                            chr.seqname=gene.info.i$seqnames,
+                                                            start=gene.info.i$start,
+                                                            end=gene.info.i$end,
+                                                            stringsAsFactors = F))
+  }
   message(i," perc. complete = ",round(100*(i/nrow(counts.filt)),4),"%")
 }
 save(counts.genes.grdf, file=paste0(data.dir, sys.sep, geneanno.name))
@@ -165,7 +168,8 @@ counts.seset <- SummarizedExperiment(assays = as.matrix(counts.se),
                                      ),
                                      metadata = list(dataset = "TARGET_AML", 
                                                      assay_source = "GDC",
-                                                     genome_build = "hg19")
+                                                     genome_build = "hg38",
+                                                     gene_annotation = "Ensembl_v86")
 )
 
 # Gene TMM SE object
@@ -181,6 +185,7 @@ tmm.seset <- SummarizedExperiment(assays = as.matrix(cpm.se),
                                   metadata = list(dataset = "TARGET_AML",
                                                   assay_source = "GDC",
                                                   genome_build = "hg19",
+                                                  gene_annotation = "Ensembl_v86",
                                                   normalization_strategy = "TMM, log_cpm, limma, edgeR"))
 
 # DEG TMM SE object
@@ -212,7 +217,8 @@ deg.seset <- SummarizedExperiment(assays = as.matrix(deg.assay),
                                   ),
                                   metadata = list(dataset = "TARGET_AML",
                                                   assay_source = "GDC",
-                                                  genome_build = "hg19",
+                                                  genome_build = "hg38",
+                                                  gene_anno = "Ensemble_v86",
                                                   normalization_strategy = "DEGs_trainset_binaryrisk, Low=0 notLow=1, reference: Low, tmm_log_cpm, voom_DE function"))
 
 # Save new SE objects
