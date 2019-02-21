@@ -193,16 +193,18 @@ tmm.seset <- SummarizedExperiment(assays = as.matrix(cpm.se),
 deglist = gsub("\\..*","",rownames(degtable))
 length(intersect(deglist, dfens$ensembl_gene_id)) # 1984 of 1998
 degfilt = deglist[deglist %in% dfens$ensembl_gene_id]
-ggr.deg = ggr.counts[names(ggr.counts) %in% degfilt]
+ggr.deg = ggr.counts[ggr.counts$ensembl_gene_id %in% degfilt]
 # deg.assay <- counts.se[rownames(counts.se) %in% degfilt,]
-deg.assay <- cpm.se[rownames(cpm.se) %in% degfilt,]
+deg.assay <- cpm.se[gsub("\\..*","",rownames(cpm.se)) %in% degfilt,]
+deg.assay <- deg.assay[order(match(gsub("\\..*","",rownames(deg.assay)), degfilt)),]
+identical(gsub("\\..*","",rownames(deg.assay)), degfilt)
 ggr.deg <- ggr.deg[order(match(names(ggr.deg), rownames(deg.assay)))]
 identical(names(ggr.deg), rownames(deg.assay)) # TRUE
 identical(substr(colnames(cpm.se),11,16), 
           substr(clinical.filt$TARGET.USI,11,16)) # TRUE
 # add the deg statistics to gene annotation
-degstats = degtable[rownames(degtable) %in% degfilt,]
-degstats = degstats[order(match(rownames(degstats), names(ggr.deg))),]
+degstats = degtable[gsub("\\..*","",rownames(degtable)) %in% degfilt,]
+degstats = degstats[order(match(gsub("\\..*","",rownames(degstats)), names(ggr.deg))),]
 identical(rownames(degstats), names(ggr.deg)) # TRUE
 ggr.deg$logFC <- degstats$logFC
 ggr.deg$AveExpr <- degstats$AveExpr
@@ -219,7 +221,6 @@ deg.seset <- SummarizedExperiment(assays = as.matrix(deg.assay),
                                   metadata = list(dataset = "TARGET_AML",
                                                   assay_source = "GDC",
                                                   genome_build = "hg38",
-                                                  gene_anno = "Ensemble_v86",
                                                   normalization_strategy = "DEGs_trainset_binaryrisk, Low=0 notLow=1, reference: Low, tmm_log_cpm, voom_DE function"))
 
 # Save new SE objects

@@ -469,7 +469,7 @@ Summarized Experiment objects were created from TARGET AML clinical and RNA-seq 
 # summarise the se object
 message("dim se object")
 dim(deg.seset)
-# [1] 1937  145
+# [1] 1984  145
 
 message("table of risk group var")
 table(deg.seset$Risk.group)
@@ -491,7 +491,7 @@ table(deg.seset$deg.risk, deg.seset$Risk.group)
 degfilt.se <- deg.seset[,which(deg.seset$deg.risk %in% c(0,1))] # subset on deg risk group available
 message("dim of filtered se object")
 dim(degfilt.se)
-# [1] 1937  137
+# [1] 1984  137
 
 # summarize gender and age at first diagnosis
 message("table of gender x binarized risk")
@@ -519,12 +519,12 @@ chisq.test(table(degfilt.se$binom.age,degfilt.se$deg.risk)) #  p-value = 0.6591,
 allgenes <- rownames(degfilt.se)
 genemeans.0 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==0]), na.rm=T)
 genemeans.1 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==1]), na.rm=T)
-lfc.deg <- log2((genemeans.1/(genemeans.0+0.01))+0.01)
+lfc.deg <- log2((genemeans.1/(genemeans.0+0.01)))
 
 message("summary of log2FC")
 summary(lfc.deg)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-# -8.4322 -1.0946 -0.6335 -0.4750  0.4029  6.7912     360
+# -8.4397 -1.0912 -0.6326 -0.4780  0.4111  7.9643     366
 
 length(allgenes[which(lfc.deg < -4)]) # 27
 length(allgenes[which(lfc.deg < -2)]) # 144
@@ -611,9 +611,9 @@ hm.test <- Heatmap(hm_data.test,
         row_title = "DEGs")
 draw(hm.test+hm.train)
 
-#jpeg(paste0(figs.dir, sys.sep, hmdeg.traintest.name), 15, 5, units="in", res=400)
-#draw(hm.test+hm.train)
-#dev.off()
+jpeg(paste0(figs.dir, sys.sep, hmdeg.traintest.name), 10, 5, units="in", res=400)
+draw(hm.test+hm.train)
+dev.off()
 
 #==================
 # Heatmap All Data
@@ -648,17 +648,24 @@ hm <- Heatmap(hm_data,
         heatmap_legend_param = list(color_bar = "continuous"),
         row_title = "DEGs")
 
-hm
-
-#jpeg(paste0(figs.dir, sys.sep, hmdeg.name), 10, 7, units="in", res=400)
 #hm
-#dev.off()
+
+jpeg(paste0(figs.dir, sys.sep, hmdeg.name), 8, 7, units="in", res=400)
+hm
+dev.off()
 
 # transverse heatmap with log2FC
 
 ```
 
 # Machine Learning: Model Fitting and Assessment
+
+```{r standard_table_output}
+# make standard table to hold all test results
+standtable = as.data.frame(rowData(degfilt.se))
+
+```
+
 
 ```{r svm}
 ```
@@ -683,25 +690,24 @@ hm
 # SM lasso test
 #---------------
 repnum = 0
-dim(deg.seset) # [1] 1937  145
-deg.seset <- deg.seset[,!(deg.seset$deg.risk=="NA")]
-dim(deg.seset) # [1] 1937  137
-gene.names = as.character(rowData(deg.seset)$countsdf.id)
-var.classifier = deg.seset$deg.risk
-glm.df = t(assay(deg.seset))
-trainset.names = colnames(assay(deg.seset[,deg.seset$exptset.seahack=="train"]))
-testset.names = colnames(assay(deg.seset[,deg.seset$exptset.seahack=="test"]))
+seset <- degfilt.se
+dim(seset) # [1] 1937  137
+
+gene.names = as.character(rownames(rowData(seset)))
+var.classifier = seset$deg.risk
+
+glm.df = t(assay(seset))
+trainset.names = colnames(assay(seset[,seset$exptset.seahack=="train"]))
+testset.names = colnames(assay(seset[,seset$exptset.seahack=="test"]))
 #----------------------------
-x.genes = gene.names
-y = var.classifier
 df = glm.df 
 train.names = trainset.names
 test.names = testset.names
 #----------------------------
-response <- y
-predictors <- x
-y <- factor(y); names(y) <- colnames(assay(deg.seset))
-x = df[,x.genes]
+response <- var.classifier
+predictors <- gene.names
+y <- factor(response); names(y) <- colnames(assay(seset)) # response var obj
+x = df[,colnames(df) %in% predictors] # genes of interest
 dim(x)
 contrast <- contrasts(y)
 grid <- 10^ seq(10,-2, length=100)
@@ -746,34 +752,51 @@ if(repnum==0){
   save(smlasso.list, file = paste0(data.dir, sys.sep, smlasso.resultlist.repname, repnum, ".rda"))
 }
 
-#-------------------------
+#======================================
+# Append Results to Standardized Table
+#======================================
+coefgenes_dfsym = names(smlasso.list$nonzero.coef)
+ncoefgenes_dfsym = rownames(seset[!rownames(seset) %in% coefgenes_dfsym,])
+
+cgl = smlasso.list$nonzero.coef
+coeffvect = c(as.numeric(cgl), 
+              rep(0, nrow(seset[!rownames(seset) %in% names(cgl)]))
+              )
+names(coeffvect) <- c(names(cgl), rownames(seset[!rownames(seset) %in% names(cgl)]))
+coeffvect = coeffvect[order(match(names(coeffvect), rownames(standtable)))]
+identical(names(coeffvect), rownames(standtable))
+
+standtable$lasso_coeff <- coeffvect
+
+#=========================
 # Plot lasso coefficients
-#-------------------------
+#=========================
 # goi (retained genes with nonzero coeff)
 lasso.goi <- names(smlasso.list$nonzero.coef)
 # gene symbols
-lasso.goi.symbols <- rowData(deg.seset[lasso.goi,])$gene.symbol
+lasso.goi.symbols <- rowData(deg.seset[lasso.goi,])$hgnc_symbol
 #data.frame(lasso.goi, lasso.goi.symbols, as.numeric(smlasso.list$nonzero.coef))
 
 # make barplot
 bpdat <- smlasso.list$nonzero.coef
 gene.order <- order(bpdat)
 bpdat <- bpdat[gene.order]
-bp.gene.symbols <- lasso.goi.symbols[gene.order]
+bp.gene.symbols <- paste0(lasso.goi[gene.order],"; ",lasso.goi.symbols[gene.order])
 bpcol <- ifelse(bpdat<0,"blue","red")
 
 jpeg(paste0(figs.dir, sys.sep, lassocoeff.figure.name),8,5,units="in",res=400)
-par(oma=c(5,2,2,2))
+
+par(oma=c(10,2,2,2))
 barplot(bpdat, col=bpcol, 
-        names.arg = bp.gene.symbols, 
+        names.arg = bp.gene.symbols,
+        cex.names = 0.6,
         las = 2, 
         ylim = c(-0.1,0.3),
         main = "Lasso Features")
 mtext(text="Coefficient",side=2,line=0,outer=TRUE,cex=1)
-mtext(text="Gene Symbol",side=1,line=2,outer=TRUE,cex=1)
+mtext(text="Gene Symbol",side=1,line=5,outer=TRUE,cex=1)
 
 dev.off()
-
 
 ```
 
