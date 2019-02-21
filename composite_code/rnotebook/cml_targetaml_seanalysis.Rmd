@@ -46,7 +46,6 @@ library(reshape2)
 
 ```{r mlfunctions, eval=FALSE}
 # ML functions
-
 # Lasso
 glm.binom <- function(x, y, df, ref="No", train.names=NULL, test.names=NULL, 
                       standardize=FALSE, splitIntoTrain=FALSE){
@@ -139,7 +138,6 @@ glm.binom <- function(x, y, df, ref="No", train.names=NULL, test.names=NULL,
   return(list)
   
 }
-
 # SVM
 runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
                    testset,testclasses, weightfilt=FALSE){
@@ -232,7 +230,9 @@ runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
 ```{r utilityfunctions, eval=FALSE}
 # utilities for data summaries and visualization
 
+#==============================
 # differential gene expression
+#==============================
 voom_DE <- function(counts.df, ref, pheno){
   # credit: Jenny Smith
   #counts.df is a dataframe with count data, with genes as rownames
@@ -276,30 +276,9 @@ voom_DE <- function(counts.df, ref, pheno){
   return(list)
 }
 
-# Survival by sample groups, plot summaries
-{
-  # credit: Sean Maden
-  ggdat <- as.data.frame(matrix(ncol=2,nrow=0))
-ggdat <- rbind(ggdat,data.frame(group='young.overallsurv',survival.time=aml.cd[class.age=='young',]$Overall.Survival.Time.in.Days))
-ggdat <- rbind(ggdat,data.frame(group='young.efsurv',survival.time=aml.cd[class.age=='young',]$Event.Free.Survival.Time.in.Days))
-ggdat <- rbind(ggdat,data.frame(group='old.overallsurv',survival.time=aml.cd[class.age=='old',]$Overall.Survival.Time.in.Days))
-ggdat <- rbind(ggdat,data.frame(group='old.efsurv',survival.time=aml.cd[class.age=='old',]$Event.Free.Survival.Time.in.Days))
-
-ggplot(ggdat, aes(x=ggdat$survival.time, col=ggdat$group))+geom_density()+
-  theme(panel.background = element_rect(fill = 'white',colour = 'black'),
-        rect = element_rect(fill = 'white',colour = "white"),
-        panel.grid.major = element_line(colour = 'grey75', size=0.2),
-        panel.grid.minor = element_line(colour = 'white'),
-        legend.position = 'right',
-        legend.background = element_rect(fill = "white", 
-                                         colour ="white"),
-        legend.key = element_rect(fill = "white"),
-        plot.title = element_text(hjust = 0.5))+
-  labs(color="Group Survival") + 
-  ggtitle("Survival Time by Age Classifier")
-}
-
-# Categorize DEGs
+#=================
+# categorize DEGs
+#=================
 catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALSE, sep="\t"){
   #credit: Jenny Smith
   # Purpose: Concatenate the expression data-sets downloaded from TCGA/TARGET from GDC or any patient level data
@@ -348,30 +327,9 @@ catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALS
   return(catedMatrices)
 }
 
-# Gene summary scatter plots
-{
-  # credit: Sean Maden
-  jpeg("target-aml_gene-meanvar-diff_test-train.jpg",10,15,units="in",res=400)
-par(mfrow=c(2,1))
-col.deg <- rgb(0.2,0.5,0.2,0.3)
-col.all <- rgb(0.7,0.1,0.2,0.3)
-test.na <- is.na(test.degdiff) | is.na(test.degvar)
-plot(test.degdiff[!test.na], test.degvar[!test.na], pch=16, col=col.deg,
-     main = "TARGET AML Test Subset",xlab="Gene mean diff (Low - Not-low)", ylab="Gene var diff (Low - Not-low)")
-test.na <- is.na(test.alldiff) | is.na(test.allvar)
-points(test.alldiff[!test.na], test.allvar[!test.na], pch=1, col=col.all)
-abline(h=0,col="blue");abline(v=0,col="blue")
-legend("topright",legend=c("All Genes","DEGs"),pch=c(1,16),col=c(col.all, col.deg))
-train.na <- is.na(train.degdiff) | is.na(train.degvar)
-plot(train.degdiff[!train.na], train.degvar[!train.na], pch=16, col=col.deg,
-     main = "TARGET AML Train Subset",xlab="Gene mean diff (Low - Not-low)", ylab="Gene var diff (Low - Not-low)")
-train.na <- is.na(train.alldiff) | is.na(train.allvar)
-points(train.alldiff[!train.na], train.allvar[!train.na], pch=1, col=col.all)
-abline(h=0,col="blue");abline(v=0,col="blue")
-dev.off()
-}
-
-# Volcano plot
+#==============
+# volcano plot
+#==============
 volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
   # credit : Jenny Smith
   df <- data.frame(logFC=fit$coefficients[,1],
@@ -432,30 +390,39 @@ data.dir = "data"
 seobj.dir = "seobjects"
 figs.dir = "figures"
 
+# summarized experiment object names
 countsseset.name <- "seset_genecounts_targetaml.rda"
 tmmseset.name <- "seset_genetmmfilt_targetaml.rda"
 degseset.name <- "seset_degseahack_targetaml.rda"
 maeobj.name <- "mae_targetaml.rda"
 
+# figure filenames
 cormap.tile.name <- "cortest_tile.jpg"
 cormap.tri.name <- "cortest_triangle.jpg"
 hmdeg.name <- "hmdeg_targetaml.jpg"
 hmdeg.rowanno.name <- "hmdeg_rowanno_targetaml.jpg"
 hmdeg.traintest.name <- "hmdeg_traintest_targetaml.jpg"
 
-# lasso obj 
+# lasso results objects and figures
 smlasso.resultlist.name <- "lasso_resultlist_smtest.rda"
 smlasso.resultlist.repname <- "lasso_resultlist_smtest_repnum"
 lassocoeff.figure.name <- "lasso_features.jpg"
+lasso.cofilt.name <- "lasso_cofilt_resultlist.rda"
 
-# rf obj
+# random forest (noboost) objects and figures
 rf.resultlist.name <- "rfiter-noboost_resultlist_smtest.rda"
 rf.plot2k.name <- "rf2k_featureimportance.jpg"
 rf.plot5k.name <- "rf5k_featureimportance.jpg"
 rf.plot10k.name <- "rf10k_featureimportance.jpg"
 rf.plotcomposite.name <- "rfall_noboost_featureimportance.jpg"
 
-# load data 
+# standard outputs table
+stdtable.name <- "standardtable_mloutputs_summary.rda"
+
+```
+
+```{r load_seobject}
+# Load the primary summarized experiment object for experiment
 load(paste0(seobj.dir, sys.sep, degseset.name))
 
 ```
@@ -465,12 +432,14 @@ Summarized Experiment objects were created from TARGET AML clinical and RNA-seq 
 
 # Data Summaries and Pre-filtering Samples with Risk Group Available
 ```{r summarizeclin, eval=TRUE, echo=TRUE}
+# Summary statistics and prefiltering samples
 
+#=========================
 # summarise the se object
+#=========================
 message("dim se object")
 dim(deg.seset)
 # [1] 1984  145
-
 message("table of risk group var")
 table(deg.seset$Risk.group)
 #     High      Low Standard  Unknown 
@@ -488,11 +457,13 @@ table(deg.seset$deg.risk, deg.seset$Risk.group)
 #  1     8   0       69       0
 #  NA    0   0        0       8
 
+#=========================================
+# pre-filter on available risk group data
+#=========================================
 degfilt.se <- deg.seset[,which(deg.seset$deg.risk %in% c(0,1))] # subset on deg risk group available
 message("dim of filtered se object")
 dim(degfilt.se)
 # [1] 1984  137
-
 # summarize gender and age at first diagnosis
 message("table of gender x binarized risk")
 table(degfilt.se$Gender,degfilt.se$deg.risk)
@@ -501,7 +472,6 @@ table(degfilt.se$Gender,degfilt.se$deg.risk)
 #   Male   31 37
 message("chisq test of gender x binarized risk")
 chisq.test(table(degfilt.se$Gender,degfilt.se$deg.risk)) # p-value = 0.8044, gender evenly dist
-
 degfilt.se$binom.age <- ifelse(degfilt.se$Age.at.Diagnosis.in.Days >= median(degfilt.se$Age.at.Diagnosis.in.Days), "old" ,"young")
 message("table of binarized age-at-diag x binarized risk")
 table(degfilt.se$binom.age,degfilt.se$deg.risk)
@@ -515,6 +485,7 @@ chisq.test(table(degfilt.se$binom.age,degfilt.se$deg.risk)) #  p-value = 0.6591,
 
 # Differentially Expressed Genes Summary
 ```{r summarizedeg, eval=TRUE, echo=TRUE}
+# DEG summaries of gene set expr. data, classifier differences, etc.
 
 allgenes <- rownames(degfilt.se)
 genemeans.0 <- rowMeans(assay(degfilt.se[,degfilt.se$deg.risk==0]), na.rm=T)
@@ -533,7 +504,9 @@ length(allgenes[which(lfc.deg > 0)]) # 412
 length(allgenes[which(lfc.deg > 2)]) # 84
 length(allgenes[which(lfc.deg > 4)]) # 14
 
-# plot
+#===========
+# DEG plots
+#===========
 plot(density(lfc.deg))
 hist(lfc.deg, breaks = 50)
 plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.unadj),
@@ -544,6 +517,7 @@ plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.unadj),
 
 # Heatmap Data Set Summaries
 ```{r degheatmap, eval=TRUE, echo=FALSE}
+# Heatmap dataset summaries, full dataset and data subsets
 require(ComplexHeatmap)
 require(circlize)
 
@@ -660,17 +634,23 @@ dev.off()
 
 # Machine Learning: Model Fitting and Assessment
 
+## Standardized Output Table
+Results from iterations of model fitting and feature weighting analyses were stored in a single table of all DEGs tested.
+
 ```{r standard_table_output}
-# make standard table to hold all test results
+# Initialize the standard table to hold all test results
 standtable = as.data.frame(rowData(degfilt.se))
 
 ```
 
-
+## Support Vector Machines
+The support vector machines (SVM) algorithm was run with the following parameters...
 ```{r svm}
 ```
 
-```{r lasso}
+## Lasso
+Lasso was run with the following parameters...
+```{r lasso_nofilt}
 # Run lasso with glmnet
 #df is the matrix with the response and  gene expression. Patients as rownames.
   #x is the character vector of column names for genes 
@@ -768,6 +748,8 @@ identical(names(coeffvect), rownames(standtable))
 
 standtable$lasso_coeff <- coeffvect
 
+save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
+
 #=========================
 # Plot lasso coefficients
 #=========================
@@ -784,41 +766,110 @@ bpdat <- bpdat[gene.order]
 bp.gene.symbols <- paste0(lasso.goi[gene.order],"; ",lasso.goi.symbols[gene.order])
 bpcol <- ifelse(bpdat<0,"blue","red")
 
-jpeg(paste0(figs.dir, sys.sep, lassocoeff.figure.name),8,5,units="in",res=400)
+jpeg(paste0(figs.dir, sys.sep, lassocoeff.figure.name),8,8,units="in",res=400)
 
 par(oma=c(10,2,2,2))
 barplot(bpdat, col=bpcol, 
         names.arg = bp.gene.symbols,
-        cex.names = 0.6,
+        cex.names = 0.75,
         las = 2, 
         ylim = c(-0.1,0.3),
         main = "Lasso Features")
 mtext(text="Coefficient",side=2,line=0,outer=TRUE,cex=1)
-mtext(text="Gene Symbol",side=1,line=5,outer=TRUE,cex=1)
+mtext(text="Gene Symbol",side=1,line=7,outer=TRUE,cex=1)
 
 dev.off()
 
 ```
 
+## Lasso with Coefficients Filter
+Lasso was repeated after first excluding genes selected in the first lasso run, or genes having non-zero coefficients after the first round of lasso. Correlatedness of genes selected in these two runs was then analyzed.
+
+```{r lasso_cofilt}
+# Re-run lasso, excluding selected genes from first lasso run
+
+genes.exclude = names(smlasso.list$nonzero.coef)
+repnum = 0
+se.subset <- degfilt.se[!rownames(degfilt.se) %in% genes.exclude,]
+dim(se.subset) # [1] 1971  137
+gene.names = as.character(rownames(rowData(se.subset)))
+var.classifier = se.subset$deg.risk
+glm.df = t(assay(se.subset))
+trainset.names = colnames(assay(se.subset[,se.subset$exptset.seahack=="train"]))
+testset.names = colnames(assay(se.subset[,se.subset$exptset.seahack=="test"]))
+df = glm.df 
+train.names = trainset.names
+test.names = testset.names
+response <- var.classifier
+predictors <- gene.names
+y <- factor(response); names(y) <- colnames(assay(se.subset)) # response var obj
+x = df[,colnames(df) %in% predictors] # genes of interest
+dim(x)
+contrast <- contrasts(y)
+grid <- 10^ seq(10,-2, length=100)
+standardize = FALSE
+fit <- glmnet(x[train.names,], y[train.names], family = "binomial", alpha=1, 
+              standardize = standardize, lambda = grid, intercept = FALSE)
+# use cross-validation on the training model.CV only for lambda
+newseed = 2019
+set.seed(newseed) 
+
+cv.fit <- cv.glmnet(x[train.names,], y[train.names], family = "binomial",
+                    type.logistic="modified.Newton", standardize = standardize,
+                    lambda = grid, alpha=1, nfolds = length(train.names), #LOOCV 
+                    type.measure = "class", intercept = FALSE)
+#Select lambda min.
+lambda.min <- cv.fit$lambda.min
+pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
+tab <- table(pred.class,y[test.names])
+testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
+# fit the full dataset.
+final <- glmnet(x, y,family = "binomial", standardize = standardize, 
+                lambda = grid, alpha = 1, intercept = FALSE)
+# extract coefficients
+coef <- predict(final, type="coefficients", s=lambda.min)
+idx <- which(!as.numeric(coef)==0)
+nonZero <- coef[idx,]
+# store results list 
+lassosubset.list <- list(train.names, test.names, contrast, fit, 
+                     cv.fit, tab, testError, final, nonZero, newseed)
+names(lassosubset.list) <- c("training.set", "testing.set","contrast", "train.fit",
+                 "cv.fit", "confusionMatrix","test.error", "final.model", 
+                 "nonzero.coef", "seednum")
+lassosubset.list$confusionMatrix
+# pred.class  0  1
+#         0 21  2
+#         1  1 20
+
+lasso.cofilt.resultlist <- lassosubset.list
+save(lasso.cofilt.resultlist,file=paste0(data.dir, sys.sep, lasso.cofilt.name))
+
+#======================================
+# Append Results to Standardized Table
+#======================================
+coefgenes_dfsym = names(lassosubset.list$nonzero.coef)
+ncoefgenes_dfsym = rownames(seset[!rownames(seset) %in% coefgenes_dfsym,])
+cgl = lassosubset.list$nonzero.coef
+coeffvect = c(as.numeric(cgl), 
+              rep(0, nrow(seset[!rownames(seset) %in% names(cgl)]))
+              )
+names(coeffvect) <- c(names(cgl), rownames(seset[!rownames(seset) %in% names(cgl)]))
+coeffvect = coeffvect[order(match(names(coeffvect), rownames(standtable)))]
+identical(names(coeffvect), rownames(standtable))
+standtable$lasso_rmCoeff <- coeffvect
+
+save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
+
+```
+
+## Random Forest without Boosting
+Random forest was run without boosting, varying the number of trees from 2,000 to 10,000.
+
 ```{r random_forest_noboost}
+# Random forest model fitting
+# varying trees to be 2k, 5k, 10k
 require(randomForest)
-
 set.seed(20)
-train.classes <- ndtr[,1]; train.set <- ndtr[,c(2:ncol(ndtr))]
-
-train.all <- ndtr; 
-colnames(train.all) <- c("class",paste0("var",seq(2,ncol(train.all),1)))
-train.all$class <- as.factor(train.all$class)
-
-test.all <- ndte; 
-colnames(test.all) <- c("class",paste0("var",seq(2,ncol(test.all),1)))
-test.all$class <- as.factor(test.all$class)
-test.vars <- test.all[,c(2:ncol(test.all))]
-# NTrees = 10
-rf10 <- randomForest(class ~ .,
-                     data=train.all,
-                     ntree=10,
-                     proximity=TRUE)
 
 # select training data
 rfdat.train <- as.data.frame(t(assay(deg.seset[,deg.seset$exptset.seahack=="train"])))
@@ -879,12 +930,28 @@ rf.returnlist <- list('rf2k.results'=list('fitmodel'=rf2k,'conf.matrix'=cm.2k),
                       'rf10k.results'=list('fitmodel'=rf10k,'conf.matrix'=cm.10k))
 save(rf.returnlist, file=paste0(data.dir, sys.sep, rf.resultlist.name))
 
-# rf plots
+#==============================
+# Append results to std. table
+#==============================
+i2kgenes = as.data.frame(importance(rf2k))
+i5kgenes = as.data.frame(importance(rf5k))
+i10kgenes = as.data.frame(importance(rf10k))
+colnames(i2kgenes) <- c("rf2ktrees_MeanDecNodeImp")
+colnames(i5kgenes) <- c("rf5ktrees_MeanDecNodeImp")
+colnames(i10kgenes) <- c("rf10ktrees_MeanDecNodeImp")
+#i2kgenes = i2kgenes[order(match(rownames(i2kgenes), rownames(standtable))),]
+#i5kgenes = i5kgenes[order(match(rownames(i5kgenes), rownames(standtable))),]
+#i10kgenes = i10kgenes[order(match(rownames(i10kgenes), rownames(standtable))),]
+identical(rownames(i2kgenes), rownames(standtable))
+identical(rownames(i5kgenes), rownames(standtable))
+identical(rownames(i10kgenes), rownames(standtable))
 
+standtable <- cbind(standtable, cbind(i2kgenes, cbind(i5kgenes, i10kgenes)))
+save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
 
-# names(bpi) <- colnames(rfdat.train)[c(2:ncol(rfdat.train))]
-# gene symbols
-
+#================================
+# Random forest importance plots
+#================================
 jpeg(paste0(figs.dir, sys.sep, rf.plotcomposite.name),8,10,units="in",res=400)
 par(oma=c(5,5,2,1),mfrow=c(3,1))
 import.cutoff = 0.2
@@ -905,10 +972,41 @@ for(i in 1:length(rfall)){
 }
 dev.off()
 
+#====================================
+# RF importance by lasso coefficient
+#====================================
+plot(standtable$lasso_coeff, standtable$rf2ktrees_MeanDecNodeImp)
+plot(standtable$lasso_coeff, standtable$rf5ktrees_MeanDecNodeImp)
+plot(standtable$lasso_coeff, standtable$rf10ktrees_MeanDecNodeImp)
+
+#par(oma=c(7,3,3,3))
+boxplot(standtable[,c("rf2ktrees_MeanDecNodeImp",
+                      "rf5ktrees_MeanDecNodeImp",
+                      "rf10ktrees_MeanDecNodeImp")],
+        las=2)
+
+hist(standtable$rf2ktrees_MeanDecNodeImp)
+
+qrf2k_95quant = quantile(standtable$rf2ktrees_MeanDecNodeImp, seq(0,1,0.05))[20]
+nrow(standtable[standtable$rf2ktrees_MeanDecNodeImp>=qrf2k_95quant,]) # 199 genes
+
+nrow(standtable[standtable$rf2ktrees_MeanDecNodeImp>=qrf2k_95quant &
+                  !standtable$lasso_coeff==0,]) # 6 genes
+
+nrow(standtable[standtable$rf2ktrees_MeanDecNodeImp>=qrf2k_95quant &
+                  (!standtable$lasso_coeff==0|
+                     !standtable$lasso_rmCoeff==0),]) # 14 genes
+
 ```
+
+## Random Forest with Boosting
+Random forest was run again, this time with boosting.
 
 ```{r random_forest_withboost}
 ```
+
+## AutoML
+We futher tested results from running automated ensemble learning algorithm, AutoML.
 
 ```{r automl}
 ```
@@ -917,141 +1015,49 @@ dev.off()
 # Correlational Map
 Note: follow up with investigation of repetitions of lasso. Do reps show different predictors retained/eliminated? Are correlated genes correlated because they share pathway/network/annotation with selected predictor?
 
-```{r degcormap, eval=FALSE, echo=FALSE}
-# ref: http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
+```{r corplot_lasso2runs}
+# Make cor plot of top features selected by 
+# initial lasso, and lasso subset 
+# (excluding initial selected features)
 
-require(reshape2)
-require(ggplot2)
-
-# Corr data, full dataset
+# corr data, full dataset
 cormat <- round(cor(t(assay(degfilt.se)), method="spearman"),3)
 melted_cormat <- melt(cormat)
-# define cutoffs
-qcorcoeff.pos <- quantile(melted_cormat[melted_cormat$value>0,]$value,seq(0,1,0.05))
-qcorcoeff.neg <- quantile(melted_cormat[melted_cormat$value<0,]$value,seq(0,1,0.05))
-pos.cut <- as.numeric(qcorcoeff.pos[20])
-neg.cut <- as.numeric(qcorcoeff.neg[2])
+corhist = 
+# corr table, filtered genes
+goi <- rownames(standtable[!standtable$lasso_coeff==0 | !standtable$lasso_rmCoeff==0,])
+cormat_filt <- round(cor(t(assay(degfilt.se[goi,])), method="spearman"),3)
+melted_cormat_filt <- melt(cormat_filt)
 
-#--------------------------
-# cordata from lasso model
-#--------------------------
-# make nested lists of correlated genes
-corlist.lasso <- list()
-lasso.goi <- names(smlasso.list$nonzero.coef)
-# corgoi.vec <- c(lasso.goi)
-for(i in 1:length(lasso.goi)){
-  mc.goi <- melted_cormat[melted_cormat$Var1==lasso.goi[i] & 
-                            (melted_cormat$value>=pos.cut | 
-                               melted_cormat$value<=neg.cut),]
-  # append.goi <- unique(mc.goi$Var2)
-  # corgoi.vec <- unique(c(corgoi.vec, append.goi))
-  # message("new length cargoi.list = ", length(corgoi.vec))
-  
-  corlist.lasso[[lasso.goi[i]]] <- c(unique(as.character(mc.goi$Var2)))
-  
-  message(" gene ",lasso.goi[i]," showed n = ",
-          length(unique(as.character(mc.goi$Var2))),
-          " correlated genes")
-}
-
-#-----------------
-# cor plots loop
-#-----------------
-library(reshape2)
-library(ggplot2)
-
-  
-# Get lower triangle of the correlation matrix
-get_lower_tri<-function(cormat){
-    cormat[upper.tri(cormat)] <- NA
-    return(cormat)
-  }
-# Get upper triangle of the correlation matrix
-get_upper_tri <- function(cormat){
-  cormat[lower.tri(cormat)]<- NA
-  return(cormat)
-  }
-
-cplots = list()
-for(i in 1:length(corlist.lasso)){
-  # form data matrix
-  mcplot <- melted_cormat[melted_cormat$Var1==names(corlist.lasso)[i] &
-                            melted_cormat$Var2 %in% corlist.lasso[[i]],]
-  cormati <- round(cor(t(assay(degfilt.se[unique(c(mcplot$Var1,mcplot$Var2)),])), method="spearman"),3)
-  upper_tri <- get_upper_tri(cormati)
-  melted_cormat <- melt(upper_tri, na.rm = TRUE)
-  
-  
-  
-  # make correlation heatmap
-  ggi <- ggplot(data = melted_cormat, aes(Var2, Var1, fill = value)) +
-          geom_tile(color = "white") +
-          scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-                         midpoint = 0, limit = c(-1,1), space = "Lab", 
-                         name="Spearman\nCorrelation") +
-          theme_minimal() + 
-          theme(axis.text.x = element_text(angle = 45, vjust = 1, 
-          size = 12, hjust = 1)) +
-          coord_fixed()
-  ggi
-  
-  cplots <- list(cplots, ggi)
-}
-  
-  # plot and save heatmap
-  plotnamei = paste0(figs.dir, sys.sep, "cortriplot_lassocoeff_", gsub("\\..*","",names(corlist.lasso)[i]), ".tiff")
-  pdf(plotnamei, 20, 20, units="in", res=400)
-  
-  dev.off()
-  
-  message("finished gene ",i)
-}
-
-jpeg(paste0(figs.dir, sys.sep, cormap.tile.name), 10, 10, units="in", res=400)
-ggplot(data = cormatfilt, aes(x=Var1, y=Var2, fill=value)) + 
-  geom_tile()
-
-
-
-#-----------
-# tile plot
-#-----------
-jpeg(paste0(figs.dir, sys.sep, cormap.tile.name), 10, 10, units="in", res=400)
-ggplot(data = cormatfilt, aes(x=Var1, y=Var2, fill=value)) + 
-  geom_tile()
+#====================
+# Density Histograms
+#====================
+corhist.name <- "corplot_hist_all-vs-lassogenes.jpg"
+jpeg(paste0(figs.dir, sys.sep, corhist.name), 6,4,units="in",res=400)
+plot(density(melted_cormat$value), col=rgb(0.2,0.2,0.8,alpha=0.2), lwd=2, lty=2,
+     xlim=c(-1.2,1.2), ylab="Relative Density", xlab="Rho", main="Gene Expr. Correlation Dist.")
+lines(density(melted_cormat_filt$value), col=rgb(0.1,0.9,0.2),lwd=3, lty=1)
+legend("topright",bty="n",legend=c("All Genes", "Lasso Genes\n(2 reps, with and\nwithout coeff. filt)"), col=c(rgb(0.2,0.2,0.8,alpha=0.2), rgb(0.1,0.9,0.2)), lwd=c(2,3),lty=c(2,1),cex=0.5)
 dev.off()
 
-#----------------
-# triangle plot
-#----------------
-# Get lower triangle of the correlation matrix
-get_lower_tri<-function(cormat){
-  cormat[upper.tri(cormat)] <- NA
-  return(cormat)
-  }
-  # Get upper triangle of the correlation matrix
-get_upper_tri <- function(cormat){
-  cormat[lower.tri(cormat)]<- NA
-  return(cormat)
-  }
-  
-upper_tri <- get_upper_tri(cormat)
-upper_tri
+#=======================
+# Correlation ggHeatmap
+#=======================
+colors <- colorRampPalette(c("blue", "green", "yellow", "red"))(42)
+colnames(melted_cormat_filt) <- c("Gene Feature 1","Gene Feature 2","Rho")
+corhm = ggplot(data = melted_cormat_filt, aes(x=melted_cormat_filt$`Gene Feature 1`, y=melted_cormat_filt$`Gene Feature 2`, fill=melted_cormat_filt$Rho)) + 
+  geom_tile() +
+  scale_fill_gradientn(colours = colors) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  ggtitle("Spearman Correlation Results\nLasso Selected Features\n(First run and CoeffFilt run)") +
+  xlab("Gene Feature 1") +
+  ylab("Gene Feature 2") +
+  labs(fill="Rho")
 
-# Melt the correlation matrix
-library(reshape2)
-melted_cormat <- melt(upper_tri, na.rm = TRUE)
-# Heatmap
-library(ggplot2)
-ggplot(data = melted_cormat, aes(Var2, Var1, fill = value)) +
- geom_tile(color = "white") +
- scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-   midpoint = 0, limit = c(-1,1), space = "Lab", 
-   name="Pearson\nCorrelation") +
-  theme_minimal() + 
- theme(axis.text.x = element_text(angle = 45, vjust = 1, 
-    size = 12, hjust = 1)) +
- coord_fixed()
+corhm.name = "corplot_hm_lassogenes.jpg"
+jpeg(paste0(figs.dir, sys.sep, corhm.name), 7, 7, units="in", res=400)
+corhm + scale_colour_gradientn(colours=rainbow(4))
+dev.off()
 
 ```
 
