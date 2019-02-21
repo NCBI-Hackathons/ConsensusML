@@ -14,8 +14,9 @@ require(SummarizedExperiment)
 require(GenomicRanges)
 require(edgeR)
 require(limma)
-require(EnsDb.Hsapiens.v86)
+require(biomaRt)
 require(MultiAssayExperiment)
+# require(EnsDb.Hsapiens.v86)
 
 # define globals
 sys.sep = "/"
@@ -97,68 +98,71 @@ cpm <- cpm(dge,log = TRUE, prior.count = 1) # all expression as counts per milli
 #=================================
 # Get Gene Annotations and Ranges
 #=================================
-# gene annotations and granges objects
-edb <- EnsDb.Hsapiens.v86 # columns(edb) to check available annotation info
-# example:
-# select(edb, keys="TP53", columns=colnames(edb),keytype="SYMBOL")
-# head(rownames(counts.filt))
-# [1] "ENSG00000000003.13" "ENSG00000000005.5"  "ENSG00000000419.11" "ENSG00000000457.12"
-# [5] "ENSG00000000460.15" "ENSG00000000938.11"
-# NOTE: ids are transcript ids
+require(biomaRt)
 
-# simply use gene-level information for now
-genes.edb <- genes(edb)
-counts.genes.grdf <- as.data.frame(matrix(ncol=6,nrow=0))
-colnames(counts.genes.grdf) <- c("gene.id","gene.symbol","countsdf.id","chr.seqname","start","end")
-for(i in 1:nrow(counts.filt)){
-  genei = rownames(counts.filt)[i]
-  if(gsub("\\..*","",genei) %in% genes.edb$gene_id){
-    gene.info.i = as.data.frame(genes.edb[genes.edb$gene_id==gsub("\\..*","",genei)])
-    counts.genes.grdf <- rbind(counts.genes.grdf,data.frame(gene.id=rownames(gene.info.i)[1],
-                                                            gene.symbol=gene.info.i$gene_name[1],
-                                                            countsdf.id=rownames(counts.filt)[i],
-                                                            chr.seqname=gene.info.i$seqnames,
-                                                            start=gene.info.i$start,
-                                                            end=gene.info.i$end,
-                                                            stringsAsFactors = F))
-  }
-  message(i," perc. complete = ",round(100*(i/nrow(counts.filt)),4),"%")
-}
-save(counts.genes.grdf, file=paste0(data.dir, sys.sep, geneanno.name))
+eids <- gsub("\\..*","",rownames(cpm))
+dfens <- getBM(attributes = c("chromosome_name","start_position","end_position","strand",
+                              "hgnc_id", "hgnc_symbol", 
+                              "ensembl_gene_id"),
+               filters = 'ensembl_gene_id', 
+               values = eids, 
+               mart = ensembl)
+dfens <- dfens[dfens$ensembl_gene_id %in% eids,]
+dfens <- dfens[!is.na(dfens$ensembl_gene_id),]
+dim(dfens)
+# [1] 18101     7
+dfens <- dfens[dfens$ensembl_gene_id %in% gsub("\\..*","",rownames(counts.se)),]
+dfens <- dfens[!duplicated(dfens$ensembl_gene_id),]
+colnames(dfens) <- c("seqnames","start","end","strand","hgnc_id","hgnc_symbol","ensembl_gene_id")
+save(dfens, file="./data/dfens_v95hg38_bmart.rda")
 
 # se experiments using filtered genes
-length(intersect(rownames(counts.filt), counts.genes.grdf$countsdf.id)) # 54713
-length(intersect(counts.genes.grdf$countsdf.id, rownames(dge))) # 17637
+counts.se <- counts.filt[gsub("\\..*","",rownames(counts.filt)) %in% dfens$ensembl_gene_id,]
+counts.se <- counts.se[order(match(gsub("\\..*","",rownames(counts.se)), dfens$ensembl_gene_id)),]
+identical(as.character(gsub("\\..*","",rownames(counts.se))), 
+          as.character(dfens$ensembl_gene_id))
+cpm.se <- cpm[gsub("\\..*","",rownames(cpm)) %in% dfens$ensembl_gene_id,]
+cpm.se <- cpm.se[order(match(gsub("\\..*","",rownames(cpm.se)), dfens$ensembl_gene_id)),]
+identical(gsub("\\..*","",rownames(cpm.se)), dfens$ensembl_gene_id)
 
-counts.se <- counts.filt[rownames(counts.filt) %in% counts.genes.grdf$countsdf.id,]
-cpm.se <- cpm[rownames(cpm) %in% counts.genes.grdf$countsdf.id,]
-dim(cpm.se)
+# counts.se <- counts.filt[rownames(counts.filt) %in% counts.genes.grdf$countsdf.id,]
+# cpm.se <- cpm[rownames(cpm) %in% counts.genes.grdf$countsdf.id,]
+# dim(cpm.se)
 # [1] 18166   145
 
 # order genes for counts se
-ganno.counts <- counts.genes.grdf[order(match(counts.genes.grdf$countsdf.id,
-                                              rownames(counts.se))),]
-identical(counts.genes.grdf$countsdf.id, rownames(counts.se))
-ganno.tmm <- counts.genes.grdf[counts.genes.grdf$countsdf.id %in% rownames(cpm.se),]
-ganno.tmm <- ganno.tmm[order(match(ganno.tmm$countsdf.id,rownames(cpm.se))),]
-identical(ganno.tmm$countsdf.id,rownames(cpm.se))
-colnames(ganno.counts) <- colnames(ganno.tmm) <- c("gene.id","gene.symbol","countsdf.id","seqnames","start","end")
+#ganno.counts <- counts.genes.grdf[order(match(counts.genes.grdf$countsdf.id,
+#                                              rownames(counts.se))),]
+#identical(counts.genes.grdf$countsdf.id, rownames(counts.se))
+#ganno.tmm <- counts.genes.grdf[counts.genes.grdf$countsdf.id %in% rownames(cpm.se),]
+#ganno.tmm <- ganno.tmm[order(match(ganno.tmm$countsdf.id,rownames(cpm.se))),]
+#identical(ganno.tmm$countsdf.id,rownames(cpm.se))
+#colnames(ganno.counts) <- colnames(ganno.tmm) <- c("gene.id","gene.symbol","countsdf.id","seqnames","start","end")
+#ggr.counts <- makeGRangesFromDataFrame(ganno.counts, 
+#                                       keep.extra.columns = T, 
+#                                       ignore.strand = T)
+#ggr.tmm <- makeGRangesFromDataFrame(ganno.tmm,
+#                                    keep.extra.columns = T,
+#                                    ignore.strand = T)
 
-ggr.counts <- makeGRangesFromDataFrame(ganno.counts, 
+dfens$strand <- ifelse(dfens$strand==-1,"-","+")
+ggr.counts <- makeGRangesFromDataFrame(dfens, 
                                        keep.extra.columns = T, 
-                                       ignore.strand = T)
-names(ggr.counts) <- ggr.counts$countsdf.id
-ggr.tmm <- makeGRangesFromDataFrame(ganno.tmm,
+                                       ignore.strand = F)
+names(ggr.counts) <- rownames(counts.se)
+
+ggr.tmm <- makeGRangesFromDataFrame(dfens,
                                     keep.extra.columns = T,
-                                    ignore.strand = T)
-names(ggr.tmm) <- ggr.tmm$countsdf.id
+                                    ignore.strand = F)
+names(ggr.tmm) <- rownames(cpm.se)
+
+identical(gsub("\\..*","",names(ggr.counts)),ggr.counts$ensembl_gene_id)
+identical(gsub("\\..*","",names(ggr.tmm)),ggr.tmm$ensembl_gene_id)
 
 #====================================
 # Make Summarized Experiment Objects
 #====================================
 # Gene Expr Counts SE object
-identical(ggr.counts$countsdf.id, rownames(counts.se)) # TRUE
-identical(names(ggr.counts), rownames(counts.se)) # TRUE
 identical(substr(colnames(counts.se),11,16), 
           substr(clinical.filt$TARGET.USI,11,16)) # TRUE
 counts.seset <- SummarizedExperiment(assays = as.matrix(counts.se),
@@ -168,13 +172,11 @@ counts.seset <- SummarizedExperiment(assays = as.matrix(counts.se),
                                      ),
                                      metadata = list(dataset = "TARGET_AML", 
                                                      assay_source = "GDC",
-                                                     genome_build = "hg38",
-                                                     gene_annotation = "Ensembl_v86")
+                                                     genome_build = "hg38")
 )
 
 # Gene TMM SE object
-identical(ggr.tmm$countsdf.id, rownames(cpm.se)) # TRUE
-identical(names(ggr.tmm), rownames(cpm.se))
+identical(ggr.tmm$ensembl_gene_id, gsub("\\..*","",rownames(cpm.se))) # TRUE
 identical(substr(colnames(cpm.se),11,16), 
           substr(clinical.filt$TARGET.USI,11,16)) # TRUE
 tmm.seset <- SummarizedExperiment(assays = as.matrix(cpm.se),
@@ -184,14 +186,13 @@ tmm.seset <- SummarizedExperiment(assays = as.matrix(cpm.se),
                                   ),
                                   metadata = list(dataset = "TARGET_AML",
                                                   assay_source = "GDC",
-                                                  genome_build = "hg19",
-                                                  gene_annotation = "Ensembl_v86",
+                                                  genome_build = "hg38",
                                                   normalization_strategy = "TMM, log_cpm, limma, edgeR"))
 
 # DEG TMM SE object
-deglist = rownames(degtable)
-length(intersect(deglist, counts.genes.grdf$countsdf.id)) # 1937 of 1998
-degfilt = deglist[deglist %in% counts.genes.grdf$countsdf.id]
+deglist = gsub("\\..*","",rownames(degtable))
+length(intersect(deglist, dfens$ensembl_gene_id)) # 1984 of 1998
+degfilt = deglist[deglist %in% dfens$ensembl_gene_id]
 ggr.deg = ggr.counts[names(ggr.counts) %in% degfilt]
 # deg.assay <- counts.se[rownames(counts.se) %in% degfilt,]
 deg.assay <- cpm.se[rownames(cpm.se) %in% degfilt,]
