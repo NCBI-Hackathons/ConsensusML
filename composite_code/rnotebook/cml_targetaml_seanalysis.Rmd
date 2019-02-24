@@ -394,6 +394,7 @@ figs.dir = "figures"
 countsseset.name <- "seset_genecounts_targetaml.rda"
 tmmseset.name <- "seset_genetmmfilt_targetaml.rda"
 degseset.name <- "seset_degseahack_targetaml.rda"
+degfiltset.name <- "sesetfilt_degseahack_targetaml.rda"
 maeobj.name <- "mae_targetaml.rda"
 
 # figure filenames
@@ -404,10 +405,10 @@ hmdeg.rowanno.name <- "hmdeg_rowanno_targetaml.jpg"
 hmdeg.traintest.name <- "hmdeg_traintest_targetaml.jpg"
 
 # lasso results objects and figures
-smlasso.resultlist.name <- "lasso_resultlist_smtest.rda"
-smlasso.resultlist.repname <- "lasso_resultlist_smtest_repnum"
-lassocoeff.figure.name <- "lasso_features.jpg"
-lasso.cofilt.name <- "lasso_cofilt_resultlist.rda"
+lasso1.nocofilt.name <- "lasso_rep1_nocofilt_resultlist.rda"
+lasso2.cofilt.name <- "lasso_rep2_cofilt1_resultlist.rda"
+lasso3.cofilt2.name <- "lasso_rep3_cofilt2_resultlist.rda"
+lasso1.figure.name <- "lasso_rep1_features.jpg"
 
 # random forest (noboost) objects and figures
 rf.resultlist.name <- "rfiter-noboost_resultlist_smtest.rda"
@@ -480,6 +481,8 @@ table(degfilt.se$binom.age,degfilt.se$deg.risk)
 #  young 28 40
 message("chisq results of binarized age-at-diag x binarized risk")
 chisq.test(table(degfilt.se$binom.age,degfilt.se$deg.risk)) #  p-value = 0.6591, age evenly dist
+
+save(degfilt.se, file=paste0("data/",degfiltset.name))
 
 ```
 
@@ -726,11 +729,14 @@ smlasso.list <- list(train.names, test.names, contrast, fit,
 names(smlasso.list) <- c("training.set", "testing.set","contrast", "train.fit",
                  "cv.fit", "confusionMatrix","test.error", "final.model", 
                  "nonzero.coef", "seednum")
-if(repnum==0){
-  save(smlasso.list, file = paste0(data.dir, sys.sep, smlasso.resultlist.name))
-} else{
-  save(smlasso.list, file = paste0(data.dir, sys.sep, smlasso.resultlist.repname, repnum, ".rda"))
-}
+
+save(smlasso.list, file = paste0(data.dir, sys.sep, lasso1.nocofilt.name))
+
+#if(repnum==0){
+#  save(smlasso.list, file = paste0(data.dir, sys.sep, lasso1.nocofilt.name))
+#} else{
+#  save(smlasso.list, file = paste0(data.dir, sys.sep, smlasso.resultlist.repname, repnum, #".rda"))
+#}
 
 #======================================
 # Append Results to Standardized Table
@@ -785,9 +791,8 @@ dev.off()
 ## Lasso with Coefficients Filter
 Lasso was repeated after first excluding genes selected in the first lasso run, or genes having non-zero coefficients after the first round of lasso. Correlatedness of genes selected in these two runs was then analyzed.
 
-```{r lasso_cofilt}
+```{r lasso_rep2_cofilt1}
 # Re-run lasso, excluding selected genes from first lasso run
-
 genes.exclude = names(smlasso.list$nonzero.coef)
 repnum = 0
 se.subset <- degfilt.se[!rownames(degfilt.se) %in% genes.exclude,]
@@ -831,25 +836,21 @@ coef <- predict(final, type="coefficients", s=lambda.min)
 idx <- which(!as.numeric(coef)==0)
 nonZero <- coef[idx,]
 # store results list 
-lassosubset.list <- list(train.names, test.names, contrast, fit, 
+lasso.rep2.cofilt.resultlist <- list(train.names, test.names, contrast, fit, 
                      cv.fit, tab, testError, final, nonZero, newseed)
-names(lassosubset.list) <- c("training.set", "testing.set","contrast", "train.fit",
+names(lasso.rep2.cofilt.resultlist) <- c("training.set", "testing.set","contrast", "train.fit",
                  "cv.fit", "confusionMatrix","test.error", "final.model", 
                  "nonzero.coef", "seednum")
-lassosubset.list$confusionMatrix
-# pred.class  0  1
-#         0 21  2
-#         1  1 20
 
-lasso.cofilt.resultlist <- lassosubset.list
-save(lasso.cofilt.resultlist,file=paste0(data.dir, sys.sep, lasso.cofilt.name))
+save(lasso.rep2.cofilt.resultlist, file=paste0(data.dir, sys.sep, lasso_rep2_cofilt1_resultlist.rda))
 
 #======================================
 # Append Results to Standardized Table
 #======================================
-coefgenes_dfsym = names(lassosubset.list$nonzero.coef)
+lr <- lasso.rep2.cofilt.resultlist
+coefgenes_dfsym = names(lr$nonzero.coef)
 ncoefgenes_dfsym = rownames(seset[!rownames(seset) %in% coefgenes_dfsym,])
-cgl = lassosubset.list$nonzero.coef
+cgl = lr$nonzero.coef
 coeffvect = c(as.numeric(cgl), 
               rep(0, nrow(seset[!rownames(seset) %in% names(cgl)]))
               )
@@ -857,6 +858,83 @@ names(coeffvect) <- c(names(cgl), rownames(seset[!rownames(seset) %in% names(cgl
 coeffvect = coeffvect[order(match(names(coeffvect), rownames(standtable)))]
 identical(names(coeffvect), rownames(standtable))
 standtable$lasso_rmCoeff <- coeffvect
+
+save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
+
+```
+
+```{r lasso_rep3_cofilt2}
+# Re-run lasso, excluding selected genes from first lasso run
+
+# load standard table
+load("data/standardtable_mloutputs_summary.rda")
+# get genes to rm
+genes.exclude <- rownames(standtable[!standtable$lasso_coeff==0 | !standtable$lasso_rmCoeff==0,])
+
+repnum = 0
+se.subset <- degfilt.se[!rownames(degfilt.se) %in% genes.exclude,]
+dim(se.subset) # [1] 1956  137
+gene.names = as.character(rownames(rowData(se.subset)))
+var.classifier = se.subset$deg.risk
+glm.df = t(assay(se.subset))
+trainset.names = colnames(assay(se.subset[,se.subset$exptset.seahack=="train"]))
+testset.names = colnames(assay(se.subset[,se.subset$exptset.seahack=="test"]))
+df = glm.df 
+train.names = trainset.names
+test.names = testset.names
+response <- var.classifier
+predictors <- gene.names
+y <- factor(response); names(y) <- colnames(assay(se.subset)) # response var obj
+x = df[,colnames(df) %in% predictors] # genes of interest
+dim(x)
+contrast <- contrasts(y)
+grid <- 10^ seq(10,-2, length=100)
+standardize = FALSE
+fit <- glmnet(x[train.names,], y[train.names], family = "binomial", alpha=1, 
+              standardize = standardize, lambda = grid, intercept = FALSE)
+# use cross-validation on the training model.CV only for lambda
+newseed = 2019
+set.seed(newseed) 
+
+cv.fit <- cv.glmnet(x[train.names,], y[train.names], family = "binomial",
+                    type.logistic="modified.Newton", standardize = standardize,
+                    lambda = grid, alpha=1, nfolds = length(train.names), #LOOCV 
+                    type.measure = "class", intercept = FALSE)
+#Select lambda min.
+lambda.min <- cv.fit$lambda.min
+pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
+tab <- table(pred.class,y[test.names])
+testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
+# fit the full dataset.
+final <- glmnet(x, y,family = "binomial", standardize = standardize, 
+                lambda = grid, alpha = 1, intercept = FALSE)
+# extract coefficients
+coef <- predict(final, type="coefficients", s=lambda.min)
+idx <- which(!as.numeric(coef)==0)
+nonZero <- coef[idx,]
+# store results list 
+lasso.rep3.cofilt2.resultlist <- list(train.names, test.names, contrast, fit, 
+                     cv.fit, tab, testError, final, nonZero, newseed)
+names(lasso.rep3.cofilt2.resultlist) <- c("training.set", "testing.set","contrast", "train.fit",
+                 "cv.fit", "confusionMatrix","test.error", "final.model", 
+                 "nonzero.coef", "seednum")
+
+save(lasso.rep3.cofilt2.resultlist, file=paste0(data.dir, sys.sep, lasso3.cofilt2.name))
+
+#======================================
+# Append Results to Standardized Table
+#======================================
+lr <- lasso.rep3.cofilt2.resultlist
+coefgenes_dfsym = names(lr$nonzero.coef)
+ncoefgenes_dfsym = rownames(degfilt.se[!rownames(degfilt.se) %in% coefgenes_dfsym,])
+cgl = lr$nonzero.coef
+coeffvect = c(as.numeric(cgl), 
+              rep(0, nrow(degfilt.se[!rownames(degfilt.se) %in% names(cgl)]))
+              )
+names(coeffvect) <- c(names(cgl), rownames(degfilt.se[!rownames(degfilt.se) %in% names(cgl)]))
+coeffvect = coeffvect[order(match(names(coeffvect), rownames(standtable)))]
+identical(names(coeffvect), rownames(standtable))
+standtable$lasso_rep3_cofilt2 <- coeffvect
 
 save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
 
