@@ -124,13 +124,13 @@ runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
   # run SVM optimization
   # Arguments
   #   * seed : set seed (int) for randomization
-  #   * kerneltype : (str) type of kernel for SVM, either 'linear' or 'gaussian'
+  #   * kerneltype : (str) valid kernel type class for SVM (e.g. 'linear', 'radial', etc.)
   #   * trainset : training dataset (excluding sample classes)
   #   * trainclasses : classes for training sampels (vector) with 1:1 correspondence 
   #       with trainset rows
   #   * testset : test data (data frame or matrix), excluding classes
   #   * testclasses : classes for test samples (vector), with 1:1 row:pos correspondence
-  #   * weightfilt : (FALSE or numeric) top percentage weights to use in model 
+  #   * weightfilt : (FALSE or numeric float) top fraction weights to use in model 
   #       (if FALSE, then all weights used) 
   # Returns
   #   * rl (list) : list containing model fitted, predictions, and performacne metrics
@@ -403,7 +403,10 @@ stdtable.name <- "standardtable_mloutputs_summary.rda"
 
 ```{r load_seobject}
 # Load the primary summarized experiment object for experiment
-load(paste0(seobj.dir, sys.sep, degseset.name))
+# load(paste0(seobj.dir, sys.sep, degseset.name))
+
+# Load the pre-filtered seset
+load(paste0(data.dir, sys.sep, degfiltset.name))
 
 ```
 
@@ -628,11 +631,86 @@ standtable = as.data.frame(rowData(degfilt.se))
 ## Support Vector Machines
 The support vector machines (SVM) algorithm was run with the following parameters...
 ```{r svm}
+# run SVM
+
+svmtrain = t(assay(degfilt.se[,degfilt.se$exptset.seahack=="train"]))
+svmtrainclasses <- degfilt.se[,degfilt.se$exptset.seahack=="train"]$deg.risk
+
+svmtest = t(assay(degfilt.se[,degfilt.se$exptset.seahack=="test"]))
+svmtestclasses <- degfilt.se[,degfilt.se$exptset.seahack=="test"]$deg.risk
+
+# Run 1 -- SVM with linear kernel, no weight filter
+svm1 <- runSVM(seed=50, kerneltype="linear", 
+               trainset=svmtrain, trainclasses = svmtrainclasses,
+               testset = svmtest, testclasses = svmtestclasses)
+
+# Run 2 -- SVM with linear kernel, 50% weight filter
+svm2 <- runSVM(seed=50, kerneltype="linear", 
+               trainset=svmtrain, trainclasses = svmtrainclasses,
+               testset = svmtest, testclasses = svmtestclasses,
+               weightfilt = 0.5)
+
+# Run 3 -- SVM with linear kernel, no weight filter
+svm3 <- runSVM(seed=50, kerneltype="radial", 
+               trainset=svmtrain, trainclasses = svmtrainclasses,
+               testset = svmtest, testclasses = svmtestclasses)
+
+# Run 4 -- SVM with linear kernel, 50% weight filter
+svm4 <- runSVM(seed=50, kerneltype="radial", 
+               trainset=svmtrain, trainclasses = svmtrainclasses,
+               testset = svmtest, testclasses = svmtestclasses,
+               weightfilt = 0.5)
+
+# results list
+
+svm.resultslist = list("svm1"=svm1, "svm2"=svm2, "svm3"=svm3, "svm4"=svm4)
+
+#==================================
+# append results (feature weights) 
+# to standard output table
+#==================================
+load(paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
+cnames = c("svm1_weights","svm2_weights","svm3_weights","svm4_weights")
+for(i in 1:4){
+  sr <- svm.resultslist[[i]]$weightsvect[1,]
+  sv <- sr[order(match(names(sr), rownames(standtable)))]
+  if(identical(names(sr), rownames(standtable))){
+    standtable$newvar <- sv
+    colnames(standtable) <- c(colnames(standtable)[1:ncol(standtable)-1],cnames[i])
+  }
+}
+
+save(standtable, file = paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
+
+```
+
+```{r svm_weights_plots}
+
+# define absolute quantile filt
+qwfilt <- 0.99
+
+jpeg(paste0(figs.dir, sys.sep, "bpweights_svm4reps.jpg"),14,10,units="in",res=400)
+par(mfrow=c(2,2),mar=c(5,3,5,2),oma=c(2,2,2,1))
+for(i in 1:length(svm.resultslist)){
+  wi <- svm.resultslist[[i]]$weightsvect
+  wv <- wi[1,]
+  names(wv) <- colnames(wi)
+  qwi <- quantile(abs(wv),seq(0,1,0.01))[100]  # apply weights filter
+  wbp <- wv[abs(wv)>=qwi]
+  wbp <- wbp[order(wbp)]
+  # append gene symbols to names
+  for(l in 1:length(wbp)){
+    names(wbp)[l] <- paste0(names(wbp)[l],";\n",rowData(degfilt.se[names(wbp)[l],])$hgnc_symbol)
+  }
+  barplot(wbp,main=paste0("Rep ",i," Weights"), las=2, cex.names = 0.5)
+}
+dev.off()
+
 ```
 
 ## Lasso
 Lasso was run with the following parameters...
-```{r lasso_nofilt}
+```{r lasso_allreps}
 # lasso model fitting reps and analysis
 # lasso reps and model assessment
 # Note: reps of lasso were performed on DEGs for TARGET pediatric AML samples
@@ -883,8 +961,54 @@ compositeCorHM(seset=degfilt.se[,degfilt.se$deg.risk==1],
 
 ```
 
-## Random Forest without Boosting
-Random forest was run without boosting, varying the number of trees from 2,000 to 10,000.
+```{r corplot_lasso2runs}
+# Make cor plot of top features selected by 
+# initial lasso, and lasso subset 
+# (excluding initial selected features)
+
+# corr data, full dataset
+cormat <- round(cor(t(assay(degfilt.se)), method="spearman"),3)
+melted_cormat <- melt(cormat)
+corhist = 
+# corr table, filtered genes
+goi <- rownames(standtable[!standtable$lasso_coeff==0 | !standtable$lasso_rmCoeff==0,])
+cormat_filt <- round(cor(t(assay(degfilt.se[goi,])), method="spearman"),3)
+melted_cormat_filt <- melt(cormat_filt)
+
+#====================
+# Density Histograms
+#====================
+corhist.name <- "corplot_hist_all-vs-lassogenes.jpg"
+jpeg(paste0(figs.dir, sys.sep, corhist.name), 6,4,units="in",res=400)
+plot(density(melted_cormat$value), col=rgb(0.2,0.2,0.8,alpha=0.2), lwd=2, lty=2,
+     xlim=c(-1.2,1.2), ylab="Relative Density", xlab="Rho", main="Gene Expr. Correlation Dist.")
+lines(density(melted_cormat_filt$value), col=rgb(0.1,0.9,0.2),lwd=3, lty=1)
+legend("topright",bty="n",legend=c("All Genes", "Lasso Genes\n(2 reps, with and\nwithout coeff. filt)"), col=c(rgb(0.2,0.2,0.8,alpha=0.2), rgb(0.1,0.9,0.2)), lwd=c(2,3),lty=c(2,1),cex=0.5)
+dev.off()
+
+#=======================
+# Correlation ggHeatmap
+#=======================
+colors <- colorRampPalette(c("blue", "green", "yellow", "red"))(42)
+colnames(melted_cormat_filt) <- c("Gene Feature 1","Gene Feature 2","Rho")
+corhm = ggplot(data = melted_cormat_filt, aes(x=melted_cormat_filt$`Gene Feature 1`, y=melted_cormat_filt$`Gene Feature 2`, fill=melted_cormat_filt$Rho)) + 
+  geom_tile() +
+  scale_fill_gradientn(colours = colors) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  ggtitle("Spearman Correlation Results\nLasso Selected Features\n(First run and CoeffFilt run)") +
+  xlab("Gene Feature 1") +
+  ylab("Gene Feature 2") +
+  labs(fill="Rho")
+
+corhm.name = "corplot_hm_lassogenes.jpg"
+jpeg(paste0(figs.dir, sys.sep, corhm.name), 7, 7, units="in", res=400)
+corhm + scale_colour_gradientn(colours=rainbow(4))
+dev.off()
+
+```
+
+## Random Forest
+Random forest, a type of ensemble learning method, was applied. We varied the number of trees from 2,000 to 10,000.
 
 ```{r random_forest_noboost}
 # Random forest model fitting
@@ -1009,64 +1133,147 @@ nrow(standtable[standtable$rf2ktrees_MeanDecNodeImp>=qrf2k_95quant &
 
 ```
 
-## Random Forest with Boosting
+## XGboost
 Random forest was run again, this time with boosting.
 
-```{r random_forest_withboost}
+```{r xgboost_allreps}
+# XGBoost, or "extreme gradient boost", a type of ensemble learning method
+# ref and tutorials: https://cran.r-project.org/web/packages/xgboost/index.html
+require(xgboost)
+
+seset <- degfilt.se
+rownames(seset) <- paste0(rownames(seset),"; ",rowData(seset)$hgnc_symbol)
+
+# run xgb on training data
+xgtrain <- t(assay(seset[,seset$exptset.seahack=="train"]))
+xgtrainlabel = seset[,seset$exptset.seahack=="train"]$deg.risk
+
+xgtest <- t(assay(seset[,seset$exptset.seahack=="test"]))
+xgtestlabel = seset[,seset$exptset.seahack=="test"]$deg.risk
+
+# rep1
+xg1 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 2,
+               eta = 1, nthread = 2, nrounds = 2, objective = "binary:logistic")
+xg1i <- xgb.importance(feature_names = colnames(xgtrain), model = xg1)
+
+# rep2
+xg2 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 50,
+               eta = 1, nthread = 2, nrounds = 2, objective = "binary:logistic")
+xg2i <- xgb.importance(feature_names = colnames(xgtrain), model = xg2)
+
+# rep3
+xg3 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 50,
+               eta = 1, nthread = 2, nrounds = 50, objective = "binary:logistic")
+xg3i <- xgb.importance(feature_names = colnames(xgtrain), model = xg3)
+
+# rep4 
+xg4 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 100,
+               eta = 1, nthread = 2, nrounds = 50, objective = "binary:logistic")
+xg4i <- xgb.importance(feature_names = colnames(xgtrain), model = xg4)
+
+# rep5
+xg5 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 100,
+               eta = 1, nthread = 2, nrounds = 100, objective = "binary:logistic")
+xg5i <- xgb.importance(feature_names = colnames(xgtrain), model = xg5)
+
+xg.resultslist = list("rep1"=xg1, "rep2"=xg2, "rep3"=xg3, "rep4"=xg4, "rep5"=xg5)
+xgi.list <- list("imp1"=xg1i, "imp2"=xg2i, "imp3"=xg3i, "imp4"=xg4i, "imp5"=xg5i)
+for(i in 1:length(xg.resultslist)){
+  xg.resultslist[[i]]$importance <- xgi.list[[i]]
+}
+
+#===========================================
+# append performance metrics on test data
+#===========================================
+
+postot <- ncol(degfilt.se[,degfilt.se$exptset.seahack=="test" & degfilt.se$deg.risk==1])
+falsetot <- ncol(degfilt.se[,degfilt.se$exptset.seahack=="test" & degfilt.se$deg.risk==0])
+for(i in 1:length(xg.resultslist)){
+  # test set predictions
+  predi <- predict(xg.resultslist[[i]], xgtest) # testset predictions
+  pbi <- ifelse(pred1>0.5, 1, 0) # binarized probabilities
+  cmi = table(pb1, xgtestlabel) # confusion matrix
+  
+  # performance metrics
+  tp = cmi[2,2]
+  fp = cmi[2,1]
+  tn = cmi[1,1]
+  fn = cmi[1,2]
+  
+  mean.err <- mean(as.numeric(pred1 > 0.5) != xgtestlabel) # mean.err
+  tpri = (cmi[2,2]/postot)
+  tnri = (cmi[1,1]/falsetot)
+  fdri = 1-(tp/(tp+fp))
+  forvali = 1-(tn/(tn+fn))
+  
+  xg.resultslist[[i]]$performance_testset <- list("confusionMatrix"=cmi,
+                                              "mean_err"=mean.err,
+                                              "tpr"=tpri,
+                                              "tnr"=tnri,
+                                              "fdr"=fdri,
+                                              "for"=forvali)
+}
+
+# testset performances df
+dfxgp <- matrix(xg.resultslist[[1]]$performance_testset[2:6], nrow=1)
+for(i in 2:length(xg.resultslist)){
+  dfxgp <- rbind(dfxgp,matrix(xg.resultslist[[i]]$performance_testset[2:6], nrow=1))
+}
+colnames(dfxgp) <- c(names(xg.resultslist[[1]]$performance_testset[2:6]))
+rownames(dfxgp) <- c(paste0("rep",seq(1,length(xg.resultslist))))
+
+xg.resultslist[["testperfdf"]] <- dfxgp
+
+#=================================
+# append results to standard table
+#=================================
+# note: performances no different across reps
+
+load(paste0(data.dir, sys.sep, stdtable.name))
+
+# only append importances, though other metrics available
+# e.g. gain, cover, and freq
+
+cnames <- c("xg1_imp", "xg2_imp", "xg3_imp", "xg4_imp", "xg5_imp")
+for(i in 1:length(cnames)){
+  xgii <- xg.resultslist[[i]]$importance
+  xgiiv <- xgii$Importance
+  names(xgiiv) <- xgii$Feature
+  standtable$newvar <- 0
+  for(l in 1:length(xgiiv)){
+    standtable[gsub(";.*","",names(xgiiv)[l]),]$newvar <- xgiiv[l]
+  }
+  colnames(standtable)[length(colnames(standtable))] <- cnames[i]
+}
+
+save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
+
 ```
 
-## AutoML
-We futher tested results from running automated ensemble learning algorithm, AutoML.
+```{r xgplot}
+# plot feature importances across reps
 
-```{r automl}
-```
+plotwidth = 7
+plotheight = 6
 
-# Machine Learning: Checking Correlation with Retained Genes
-# Correlational Map
-Note: follow up with investigation of repetitions of lasso. Do reps show different predictors retained/eliminated? Are correlated genes correlated because they share pathway/network/annotation with selected predictor?
-
-```{r corplot_lasso2runs}
-# Make cor plot of top features selected by 
-# initial lasso, and lasso subset 
-# (excluding initial selected features)
-
-# corr data, full dataset
-cormat <- round(cor(t(assay(degfilt.se)), method="spearman"),3)
-melted_cormat <- melt(cormat)
-corhist = 
-# corr table, filtered genes
-goi <- rownames(standtable[!standtable$lasso_coeff==0 | !standtable$lasso_rmCoeff==0,])
-cormat_filt <- round(cor(t(assay(degfilt.se[goi,])), method="spearman"),3)
-melted_cormat_filt <- melt(cormat_filt)
-
-#====================
-# Density Histograms
-#====================
-corhist.name <- "corplot_hist_all-vs-lassogenes.jpg"
-jpeg(paste0(figs.dir, sys.sep, corhist.name), 6,4,units="in",res=400)
-plot(density(melted_cormat$value), col=rgb(0.2,0.2,0.8,alpha=0.2), lwd=2, lty=2,
-     xlim=c(-1.2,1.2), ylab="Relative Density", xlab="Rho", main="Gene Expr. Correlation Dist.")
-lines(density(melted_cormat_filt$value), col=rgb(0.1,0.9,0.2),lwd=3, lty=1)
-legend("topright",bty="n",legend=c("All Genes", "Lasso Genes\n(2 reps, with and\nwithout coeff. filt)"), col=c(rgb(0.2,0.2,0.8,alpha=0.2), rgb(0.1,0.9,0.2)), lwd=c(2,3),lty=c(2,1),cex=0.5)
+jpeg(paste0(figs.dir, sys.sep, "xgb1_compimportance.jpg"), plotwidth, plotheight, units="in", res=400)
+xgb.ggplot.importance(importance_matrix = xg.resultslist[[1]]$importance, main="Rep 1 Importance")
 dev.off()
 
-#=======================
-# Correlation ggHeatmap
-#=======================
-colors <- colorRampPalette(c("blue", "green", "yellow", "red"))(42)
-colnames(melted_cormat_filt) <- c("Gene Feature 1","Gene Feature 2","Rho")
-corhm = ggplot(data = melted_cormat_filt, aes(x=melted_cormat_filt$`Gene Feature 1`, y=melted_cormat_filt$`Gene Feature 2`, fill=melted_cormat_filt$Rho)) + 
-  geom_tile() +
-  scale_fill_gradientn(colours = colors) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  ggtitle("Spearman Correlation Results\nLasso Selected Features\n(First run and CoeffFilt run)") +
-  xlab("Gene Feature 1") +
-  ylab("Gene Feature 2") +
-  labs(fill="Rho")
+jpeg(paste0(figs.dir, sys.sep, "xgb2_compimportance.jpg"), plotwidth, plotheight, units="in", res=400)
+xgb.ggplot.importance(importance_matrix = xg.resultslist[[2]]$importance, main="Rep 2 Importance")
+dev.off()
 
-corhm.name = "corplot_hm_lassogenes.jpg"
-jpeg(paste0(figs.dir, sys.sep, corhm.name), 7, 7, units="in", res=400)
-corhm + scale_colour_gradientn(colours=rainbow(4))
+jpeg(paste0(figs.dir, sys.sep, "xgb3_compimportance.jpg"), plotwidth, plotheight, units="in", res=400)
+xgb.ggplot.importance(importance_matrix = xg.resultslist[[3]]$importance, main="Rep 3 Importance")
+dev.off()
+
+jpeg(paste0(figs.dir, sys.sep, "xgb4_compimportance.jpg"), plotwidth, plotheight, units="in", res=400)
+xgb.ggplot.importance(importance_matrix = xg.resultslist[[4]]$importance, main="Rep 4 Importance")
+dev.off()
+
+jpeg(paste0(figs.dir, sys.sep, "xgb5_compimportance.jpg"), plotwidth, plotheight, units="in", res=400)
+xgb.ggplot.importance(importance_matrix = xg.resultslist[[5]]$importance, main="Rep 5 Importance")
 dev.off()
 
 ```
