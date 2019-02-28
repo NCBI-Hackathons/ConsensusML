@@ -661,9 +661,11 @@ svm4 <- runSVM(seed=50, kerneltype="radial",
                testset = svmtest, testclasses = svmtestclasses,
                weightfilt = 0.5)
 
-# results list
-
+#=============================
+# form and save results list
+#=============================
 svm.resultslist = list("svm1"=svm1, "svm2"=svm2, "svm3"=svm3, "svm4"=svm4)
+save(svm.resultslist, file=paste0(data.dir, sys.sep, "svm4reps_resultslist.rda"))
 
 #==================================
 # append results (feature weights) 
@@ -1224,6 +1226,11 @@ rownames(dfxgp) <- c(paste0("rep",seq(1,length(xg.resultslist))))
 
 xg.resultslist[["testperfdf"]] <- dfxgp
 
+#===================
+# save resultslist
+#===================
+save(xg.resultslist, file=paste0(data.dir, sys.sep, "xgb_resultslist.rda"))
+
 #=================================
 # append results to standard table
 #=================================
@@ -1278,7 +1285,11 @@ dev.off()
 
 ```
 
-# Machine Learning: Predictive Features Consensus
+# Machine Learning Summary
+
+```{r write_standtable_csv}
+write.csv(standtable, file=paste0(data.dir, sys.sep, "standouttable.csv"))
+```
 
 # Results Summaries
 
