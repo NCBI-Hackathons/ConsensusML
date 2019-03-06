@@ -1,6 +1,10 @@
 ---
 title: "Discovery of Acute Myeloid Leukemia Biomarkers using Ensemble Machine Learning"
+author:
+- Sean Maden
+- Jenny Smith
 output: html_notebook
+
 ---
 
 ```{r setup, include=FALSE}
@@ -62,6 +66,7 @@ library(biomaRt)
 # ML functions
 # Lasso
 runLasso <- function(seset, seed=2019){
+  # credit base code: Jenny Smith
   # runLasso
   # Fit a model using penalized regression with lasso
   # Arguments:
@@ -120,7 +125,7 @@ runLasso <- function(seset, seed=2019){
 # SVM
 runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
                    testset,testclasses, weightfilt=FALSE){
-  # credit : Sean Maden
+  # credit base code: Sean Maden
   # run SVM optimization
   # Arguments
   #   * seed : set seed (int) for randomization
@@ -213,7 +218,7 @@ runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
 # differential gene expression
 #==============================
 voom_DE <- function(counts.df, ref, pheno){
-  # credit: Jenny Smith
+  # credit base code: Jenny Smith
   #counts.df is a dataframe with count data, with genes as rownames
   #pheno is a character vector with patient IDs as names, and the status for each in each group(eg pos,neg)
   require(edgeR)
@@ -259,7 +264,7 @@ voom_DE <- function(counts.df, ref, pheno){
 # categorize DEGs
 #=================
 catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALSE, sep="\t"){
-  #credit: Jenny Smith
+  #credit base code: Jenny Smith
   # Purpose: Concatenate the expression data-sets downloaded from TCGA/TARGET from GDC or any patient level data
   #eg. each individual patient has a single expression-file 
   
@@ -310,7 +315,7 @@ catExpnData <- function(filenames,regex, cols, header=FALSE,removeFirstLine=FALS
 # volcano plot
 #==============
 volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
-  # credit : Jenny Smith
+  # credit base code: Jenny Smith
   df <- data.frame(logFC=fit$coefficients[,1],
                    pValue=fit$p.value[,1],
                    FDR=p.adjust(fit$p.value[,1], method="BH"),
