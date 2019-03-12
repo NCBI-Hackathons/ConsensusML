@@ -10,6 +10,9 @@ output: html_notebook
 ```{r setup, include=FALSE}
 require(knitr)
 # knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
+# knitr::opts_knit$set(root.dir = '/Users/jlsmith3/ConsensusML/')
+
+
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),
                       tidy=TRUE, 
                       fig.align='center', 
@@ -40,7 +43,6 @@ library(magrittr)
 library(ggplot2)
 library(glmnet)
 library(ROSE)
-library(knitr)
 library(stringr)
 library(dplyr)
 library(tibble)
@@ -49,7 +51,7 @@ library(limma)
 library(edgeR)
 library(MLSeq)
 library(DESeq2)
-library(xlsx)
+# library(xlsx) #java image no found??
 library(VennDiagram)
 library(SummarizedExperiment)
 library(GenomicRanges)
@@ -82,15 +84,20 @@ runLasso <- function(seset, seed=2019){
   gene.names = as.character(rownames(rowData(seset)))
   var.classifier = seset$deg.risk
   df = t(assay(seset))
+  
   train.names = colnames(assay(seset[,seset$exptset.seahack=="train"]))
   test.names = colnames(assay(seset[,seset$exptset.seahack=="test"]))
+  
   response <- var.classifier
   predictors <- gene.names
   y <- factor(response); names(y) <- colnames(assay(seset)) # response var obj
   x = df[,colnames(df) %in% predictors] # genes of interest
   contrast <- contrasts(y)
+  
   grid <- 10^ seq(10,-2, length=100)
   standardize = FALSE
+  
+  
   fit <- glmnet(x[train.names,], y[train.names], family = "binomial", alpha=1, 
                 standardize = standardize, lambda = grid, intercept = FALSE)
   
@@ -367,6 +374,8 @@ volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
 
 ```
 
+
+
 ```{r globals_and_loadobj}
 # define globals
 sys.sep = "/"
@@ -408,12 +417,15 @@ stdtable.name <- "standardtable_mloutputs_summary.rda"
 
 ```{r load_seobject}
 # Load the primary summarized experiment object for experiment
-# load(paste0(seobj.dir, sys.sep, degseset.name))
+load(paste0(seobj.dir, sys.sep, degseset.name))
 
 # Load the pre-filtered seset
 load(paste0(data.dir, sys.sep, degfiltset.name))
 
 ```
+
+
+
 
 # Data Preparation
 Summarized Experiment objects were created from TARGET AML clinical and RNA-seq data obtained from GDC. Gene counts from STAR 2-Pass alignment were converted using TMM into log counts-per-million scale. Differentially Expressed Genes were determined comparing classifier sample groups in the training sample subset only. Genes were pre-filered on whether at least 5 samples (set-wide) showing counts per mission greater than or equal to 1. 
@@ -469,11 +481,14 @@ table(degfilt.se$binom.age,degfilt.se$deg.risk)
 message("chisq results of binarized age-at-diag x binarized risk")
 chisq.test(table(degfilt.se$binom.age,degfilt.se$deg.risk)) #  p-value = 0.6591, age evenly dist
 
-save(degfilt.se, file=paste0("data/",degfiltset.name))
+# save(degfilt.se, file=paste0("data/",degfiltset.name))
 
 ```
 
+
+
 # Differentially Expressed Genes Summary
+
 ```{r summarizedeg, eval=TRUE, echo=TRUE}
 # DEG summaries of gene set expr. data, classifier differences, etc.
 
@@ -497,7 +512,7 @@ length(allgenes[which(lfc.deg > 4)]) # 14
 #===========
 # DEG plots
 #===========
-plot(density(lfc.deg))
+plot(density(lfc.deg[!is.na(lfc.deg)] )) #Error in density.default(lfc.deg) : 'x' contains missing values???
 hist(lfc.deg, breaks = 50)
 plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.unadj),
      xlab="Log2FC(NotLow_1/Low_0)",
@@ -505,8 +520,11 @@ plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.unadj),
 
 ```
 
+
+
 # Heatmap Data Set Summaries
-```{r degheatmap, eval=TRUE, echo=FALSE}
+
+```{r degheatmap, eval=TRUE, echo=FALSE, fig.height=7, fig.width=14}
 # Heatmap dataset summaries, full dataset and data subsets
 require(ComplexHeatmap)
 require(circlize)
@@ -520,9 +538,22 @@ hm_data <- as.matrix(assay(seset))
 breaks=seq(min(hm_data),max(hm_data),0.1)
 hmcol = colorRamp2(breaks, colorRampPalette(c("green","black","red"))(n=length(breaks)))
 
+```
+
+```{r}
 # train data
 seset <- degfilt.se[,degfilt.se$exptset.seahack=="train"]
-hm_data.train <- as.matrix(assay(seset)[!is.na(lfc.deg),])
+hm_data.train <- as.matrix(assay(seset)[!is.na(lfc.deg),]) %>% 
+  t() %>% 
+  scale() %>% 
+  t()
+
+
+breaks=seq(min(hm_data.train),max(hm_data.train),0.01)
+hmcol = colorRamp2(breaks, colorRampPalette(c("green1","green2", "green3","green4","black",
+                                              "red4","red3", "red2","red1"))(n=length(breaks)))
+
+
 # hm col annotations can contain complex layered output and colored annotaions
 hm_colanno.train <- HeatmapAnnotation(show_legend = TRUE,
                                 df = data.frame(sampletype=seset$deg.risk,
@@ -536,6 +567,7 @@ hm_colanno.train <- HeatmapAnnotation(show_legend = TRUE,
 hm.train <- Heatmap(hm_data.train,
         col=hmcol,
         cluster_columns = TRUE,
+        cluster_rows = TRUE,
         show_heatmap_legend = TRUE,
         top_annotation = hm_colanno.train,
         name="tmm_log_cpm",
@@ -547,9 +579,16 @@ hm.train <- Heatmap(hm_data.train,
         heatmap_legend_param = list(color_bar = "continuous"),
         row_title = "DEGs")
 
+draw(hm.train)
+```
+
+
+```{r}
 # test data
 seset <- degfilt.se[,degfilt.se$exptset.seahack=="test"]
 hm_data.test <- as.matrix(assay(seset)[!is.na(lfc.deg),])
+
+
 # hm col annotations can contain complex layered output and colored annotaions
 hm_colanno.test <- HeatmapAnnotation(show_legend = TRUE,
                                 df = data.frame(sampletype=seset$deg.risk,
@@ -621,6 +660,7 @@ dev.off()
 # transverse heatmap with log2FC
 
 ```
+
 
 # Machine Learning: Model Fitting and Assessment
 
