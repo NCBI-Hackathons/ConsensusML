@@ -889,10 +889,10 @@ rm(idx,rl, p)
 
 ```{r warning=FALSE}
 
-i <- NULL
-permutation.res <- list()
+# i <- NULL
+# permutation.res <- list()
 
-for (i in 1:5000 ){
+# for (i in 1:5000 ){
 
   #column name
   p <- paste("perm", i, sep="_")
@@ -921,13 +921,25 @@ l1.tp$test.error #(7%) # 0.06818182
 l1.tp$nonzero.coef
 ```
 
+```{r}
+test.errors[test.errors < 0.07]
+names(permutation.res$perm_106) %in% names(l1.tp$nonzero.coef)
+```
+
 
 ```{r}
 test.errors <- sapply(permutation.res, "[[", 1)
 head(test.errors)
 
-hist(test.errors, breaks = seq(0,1, by=0.01))
+table(test.errors)
+```
+
+```{r}
+# tiff("test_errors_hist_360x_permutations.tiff", height = 5, width = 5,  units="in", res=200)
+hist(test.errors, breaks = seq(0,1, by=0.05), 
+     xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests with Lasso Regression")
 abline(v=l1.tp$test.error, col="red", lwd=2)
+# dev.off()
 ```
 
 
