@@ -10,9 +10,6 @@ output: html_notebook
 ```{r setup, include=FALSE}
 require(knitr)
 # knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
-# knitr::opts_knit$set(root.dir = '/Users/jlsmith3/ConsensusML/')
-
-
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),
                       tidy=TRUE, 
                       fig.align='center', 
@@ -21,10 +18,11 @@ knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),
                       dpi = 600,
                       echo=FALSE,
                       eval=TRUE)
+
 options(stringsAsFactors = FALSE)
 ```
 
-```{r libraries, eval=TRUE, echo=FALSE}
+```{r libraries, eval=TRUE, echo=FALSE, message=FALSE}
 # get dependency libraries
 
 #==========
@@ -120,6 +118,7 @@ runLasso <- function(seset, seed=2019){
   coef <- predict(final, type="coefficients", s=lambda.min)
   idx <- which(!as.numeric(coef)==0)
   nonZero <- coef[idx,]
+  
   #Results 
   resultslist <- list(train.names, test.names, contrast, fit, 
                        cv.fit, tab, testError, final, nonZero, seed)
@@ -128,6 +127,8 @@ runLasso <- function(seset, seed=2019){
                            "nonzero.coef", "seed")
   return(resultslist)
 }
+
+
 
 # SVM
 runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
@@ -446,6 +447,7 @@ table(deg.seset$Risk.group)
 #       8       60       69        8
 deg.seset$deg.risk <- ifelse(deg.seset$Risk.group=="Low", 0,
                              ifelse(deg.seset$Risk.group %in% c("Standard","High"),1,"NA"))
+
 message("table of binarized risk group")
 table(deg.seset$deg.risk)
 # 0  1 NA 
@@ -757,6 +759,159 @@ dev.off()
 
 ## Lasso
 Lasso was run with the following parameters...
+
+```{r}
+# ML functions
+# Lasso
+runLasso <- function(seset, seed=2019){
+  # credit base code: Jenny Smith
+  # runLasso
+  # Fit a model using penalized regression with lasso
+  # Arguments:
+  # * sese: Valid summarized experiment object
+  # * seed: (int) set seed for randomization
+  # Returns:
+  # * resultslist (list) : Results of lasso fit
+  
+  require(glmnet)
+  require(SummarizedExperiment)
+  set.seed(seed) 
+  
+  gene.names = rownames(rowData(seset))
+  var.classifier = seset$deg.risk
+  df = t(assay(seset))
+  
+  train.names = colnames(assay(seset[,seset$exptset.seahack=="train"]))
+  test.names = colnames(assay(seset[,seset$exptset.seahack=="test"]))
+  
+  response <- var.classifier
+  predictors <- gene.names
+  
+  y <- factor(response); names(y) <- colnames(assay(seset)) # response var obj
+  x = df[,predictors] # genes of interest
+  contrast <- contrasts(y)
+  
+  #lambda values
+  grid <- 10^ seq(10,-2, length=100)
+  
+  #standardize is an option to mean center. 
+  #Don't use since we want to keep the natural variation and expression is already normalized for sample to  sample comparisons. 
+  standardize = FALSE
+  
+  fit <- glmnet(x[train.names,], y[train.names], family = "binomial", alpha=1, 
+                standardize = standardize, lambda = grid, intercept = FALSE)
+  
+  # use cross-validation on the training model.CV only for lambda
+  cv.fit <- cv.glmnet(x[train.names,], y[train.names], family = "binomial",
+                      type.logistic="modified.Newton", standardize = standardize,
+                      lambda = grid, alpha=1, nfolds = length(train.names), #LOOCV 
+                      type.measure = "class", intercept = FALSE)
+  
+  #Select lambda min.
+  lambda.min <- cv.fit$lambda.min
+  
+  #predict the classes
+  pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
+  
+  #find the test error
+  tab <- table(pred.class,y[test.names])
+  testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
+  
+  #Fit the full dataset.
+  final <- glmnet(x, y,family = "binomial", standardize = standardize, 
+                  lambda = grid, alpha = 1, intercept = FALSE)
+  #Extract the coefficients
+  coef <- predict(final, type="coefficients", s=lambda.min)
+  idx <- which(!as.numeric(coef)==0)
+  nonZero <- coef[idx,]
+  
+  #Results 
+  resultslist <- list(train.names, test.names, contrast, fit, 
+                       cv.fit, tab, testError, final, nonZero, seed)
+  names(resultslist) <- c("training.set", "testing.set","contrast", "train.fit",
+                           "cv.fit", "confusionMatrix","test.error", "final.model", 
+                           "nonzero.coef", "seed")
+  return(resultslist)
+}
+
+```
+
+The example I saw randomly sampled the whole dataset and then selected 1:N for class A and the remaining for class B.
+see replicate()
+
+I also need to ONLY change the training set, right? this would be because of the test error should be based on the true labels...
+and thus show that these genes are clearly the worse model, than the true model.
+
+```{r warning=FALSE}
+#permutation with a single ground truth class assignment. 
+l1.tp <- runLasso(seset = degfilt.se)
+
+```
+
+
+```{r}
+labs <- data.frame(USI=degfilt.se$TARGET.USI, 
+                   Set=degfilt.se$exptset.seahack,
+                   Risk.group=degfilt.se$Risk.group)
+
+permutation.res <- list()
+class.labels <- c(0,1) # 0 == low, 1 == high/std risk
+
+permutation.res <- list()
+for (i in 1:5000){
+  
+  print(i)
+  #random sampling of the class labels.
+  rl <- base::sample(class.labels, size = sum(degfilt.se$exptset.seahack=="train"), replace = TRUE)
+  idx <- which(degfilt.se$exptset.seahack=="train")
+  
+  print(table(rl))
+  #a SE object that will be modified with the permutation labels
+  seset.per <- degfilt.se 
+  
+  #update the response variable to be the randomly assigned classes
+  seset.per$deg.risk[idx] <- rl 
+  
+  print(table(seset.per$deg.risk, seset.per$exptset.seahack))
+  
+  #dataframe to hold the randomized labels for later querying 
+  p <- paste("perm", i, sep="_")
+  labs <- mutate(labs, !! p :=  seset.per$deg.risk)
+  
+  #run lasso with the randomly assigned group labels
+  lasso.perm <- runLasso(seset = seset.per, seed =  i*7)
+  # permutation.res[[p]] <- list(lasso.perm$test.error, lasso.perm$nonzero.coef)
+  
+  #ensure nothing is contaminating the results
+  rm(seset.per, lasso.perm, rl)
+}
+
+rm(seset.per,lasso.perm, idx,rl, p)
+
+#Sanity check 
+# View(labs)
+# 
+saveRDS(permutation.res, "permutation_5000_res.RDS")
+write.csv(labs, "permutation_5000_labels.csv", row.names = FALSE)
+```
+
+```{r}
+l1.tp$test.error #(7%) # 0.06818182
+
+l1.tp$nonzero.coef
+```
+
+
+
+
+```{r}
+test.errors <- sapply(permutation.res, "[[", 1)
+
+test.errors
+```
+
+
+
 ```{r lasso_allreps}
 # lasso model fitting reps and analysis
 # lasso reps and model assessment
@@ -842,6 +997,9 @@ save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
 # length(intersect(rownames(standtable[!standtable$lasso_coef_rep2==0,]), rownames(standtable[!standtable$lasso_coef_rep3==0,]))) # 0
 
 ```
+
+
+
 
 ```{r lasso_model_performance_plots}
 #==========================================
