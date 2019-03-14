@@ -855,43 +855,42 @@ Also, I totally forgot to uncomment the code that save the results. so Yay.
 ```{r}
 labs <- data.frame(USI=degfilt.se$TARGET.USI, 
                    Set=degfilt.se$exptset.seahack,
-                   Risk.group=degfilt.se$Risk.group)
+                   Risk.group=degfilt.se$Risk.group, 
+                   deg.risk=degfilt.se$deg.risk)
 
 class.labels <- c(0,1) # 0 == low, 1 == high/std risk
 
 
 for (i in 1:5000){
   
+  print(i)
+  
   #random sampling of the class labels.
-  rl <- base::sample(class.labels, size = sum(degfilt.se$exptset.seahack=="train"), replace = TRUE)
-  idx <- which(degfilt.se$exptset.seahack=="train")
+  rl <- base::sample(class.labels, size = sum(labs$Set=="train"), replace = TRUE)
+  idx <- which(labs$Set=="train")
   
-  #a SE object that will be modified with the permutation labels
-  seset.per <- degfilt.se 
-  
-  #update the response variable to be the randomly assigned classes
-  seset.per$deg.risk[idx] <- rl 
-  print(table(seset.per$deg.risk, seset.per$exptset.seahack))
-  
-  #dataframe to hold the randomized labels for later querying 
+  # #dataframe to hold the randomized labels for later querying 
   p <- paste("perm", i, sep="_")
-  labs <- mutate(labs, !! p :=  seset.per$deg.risk)
-
+  labs[,p] <- labs$deg.risk
+  labs[idx,p] <- rl 
+  
+  # print(table(labs[,p], labs$Set))
 }
 
-rm(seset.per, idx,rl, p)
+#remove unnecessary objects from envio
+rm(idx,rl, p)
 
 #Sanity check 
-# View(labs)
+# View(labs[,1:100])
 
 # write.csv(labs, "permutation_5000_labels.csv", row.names = FALSE)
 ```
 
 
-```{r}
+```{r warning=FALSE}
 
 i <- NULL
-permutation.res_B <- list()
+permutation.res <- list()
 
 for (i in 1:5000 ){
 
@@ -899,29 +898,22 @@ for (i in 1:5000 ){
   p <- paste("perm", i, sep="_")
   print(p)
   
-  #index for train/test set rows
-  idx <- which(degfilt.se$exptset.seahack=="train")
-  
   #a SE object that will be modified with the permutation labels
   seset.per <- degfilt.se 
   
   #update the response variable to be the randomly assigned classes
-  seset.per$deg.risk[idx] <-  labs[,p]
+  seset.per$deg.risk <-  labs[,p]
   
-  print(table(seset.per$deg.risk, seset.per$exptset.seahack))
-  
-  #dataframe to hold the randomized labels for later querying 
-
   #run lasso with the randomly assigned group labels
-  # lasso.perm <- runLasso(seset = seset.per, seed =  i*7)
-  # permutation.res[[p]] <- list(lasso.perm$test.error, lasso.perm$nonzero.coef)
+  lasso.perm <- runLasso(seset = seset.per, seed =  i*7)
+  permutation.res[[p]] <- list(lasso.perm$test.error, lasso.perm$nonzero.coef)
   
+  #remove for envio
+  rm(lasso.perm,seset.per,i,p)
 } 
 
 # saveRDS(permutation.res, "permutation_5000_res.RDS")
 ```
-
-
 
 ```{r}
 l1.tp$test.error #(7%) # 0.06818182
@@ -930,12 +922,12 @@ l1.tp$nonzero.coef
 ```
 
 
-
-
 ```{r}
 test.errors <- sapply(permutation.res, "[[", 1)
+head(test.errors)
 
-test.errors
+hist(test.errors, breaks = seq(0,1, by=0.01))
+abline(v=l1.tp$test.error, col="red", lwd=2)
 ```
 
 
