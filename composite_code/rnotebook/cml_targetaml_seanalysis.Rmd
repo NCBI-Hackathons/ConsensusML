@@ -937,7 +937,7 @@ table(test.errors)
 ```{r}
 # tiff("test_errors_hist_360x_permutations.tiff", height = 5, width = 5,  units="in", res=200)
 hist(test.errors, breaks = seq(0,1, by=0.05), 
-     xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests with Lasso Regression")
+     xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests \n with Lasso Regression")
 abline(v=l1.tp$test.error, col="red", lwd=2)
 # dev.off()
 ```
