@@ -845,55 +845,83 @@ and thus show that these genes are clearly the worse model, than the true model.
 ```{r warning=FALSE}
 #permutation with a single ground truth class assignment. 
 l1.tp <- runLasso(seset = degfilt.se)
-
 ```
 
+
+UGGHHHHH so I cant understand it, but the sample() function run BEFORE the runlass() function causes A HUGE decrease in the variablility of the sampling. It is litterally the same few distributions of the class labels.... 
+
+Also, I totally forgot to uncomment the code that save the results. so Yay. 
 
 ```{r}
 labs <- data.frame(USI=degfilt.se$TARGET.USI, 
                    Set=degfilt.se$exptset.seahack,
                    Risk.group=degfilt.se$Risk.group)
 
-permutation.res <- list()
 class.labels <- c(0,1) # 0 == low, 1 == high/std risk
 
-permutation.res <- list()
+
 for (i in 1:5000){
   
-  print(i)
   #random sampling of the class labels.
   rl <- base::sample(class.labels, size = sum(degfilt.se$exptset.seahack=="train"), replace = TRUE)
   idx <- which(degfilt.se$exptset.seahack=="train")
   
-  print(table(rl))
   #a SE object that will be modified with the permutation labels
   seset.per <- degfilt.se 
   
   #update the response variable to be the randomly assigned classes
   seset.per$deg.risk[idx] <- rl 
-  
   print(table(seset.per$deg.risk, seset.per$exptset.seahack))
   
   #dataframe to hold the randomized labels for later querying 
   p <- paste("perm", i, sep="_")
   labs <- mutate(labs, !! p :=  seset.per$deg.risk)
-  
-  #run lasso with the randomly assigned group labels
-  lasso.perm <- runLasso(seset = seset.per, seed =  i*7)
-  # permutation.res[[p]] <- list(lasso.perm$test.error, lasso.perm$nonzero.coef)
-  
-  #ensure nothing is contaminating the results
-  rm(seset.per, lasso.perm, rl)
+
 }
 
-rm(seset.per,lasso.perm, idx,rl, p)
+rm(seset.per, idx,rl, p)
 
 #Sanity check 
 # View(labs)
-# 
-saveRDS(permutation.res, "permutation_5000_res.RDS")
-write.csv(labs, "permutation_5000_labels.csv", row.names = FALSE)
+
+# write.csv(labs, "permutation_5000_labels.csv", row.names = FALSE)
 ```
+
+
+```{r}
+
+i <- NULL
+permutation.res_B <- list()
+
+for (i in 1:5000 ){
+
+  #column name
+  p <- paste("perm", i, sep="_")
+  print(p)
+  
+  #index for train/test set rows
+  idx <- which(degfilt.se$exptset.seahack=="train")
+  
+  #a SE object that will be modified with the permutation labels
+  seset.per <- degfilt.se 
+  
+  #update the response variable to be the randomly assigned classes
+  seset.per$deg.risk[idx] <-  labs[,p]
+  
+  print(table(seset.per$deg.risk, seset.per$exptset.seahack))
+  
+  #dataframe to hold the randomized labels for later querying 
+
+  #run lasso with the randomly assigned group labels
+  # lasso.perm <- runLasso(seset = seset.per, seed =  i*7)
+  # permutation.res[[p]] <- list(lasso.perm$test.error, lasso.perm$nonzero.coef)
+  
+} 
+
+# saveRDS(permutation.res, "permutation_5000_res.RDS")
+```
+
+
 
 ```{r}
 l1.tp$test.error #(7%) # 0.06818182
