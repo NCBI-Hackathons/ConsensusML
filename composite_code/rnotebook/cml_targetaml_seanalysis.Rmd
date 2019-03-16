@@ -386,8 +386,7 @@ volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
     
     geom_text_repel(aes(x=logFC, y=Neg.Log10.P, label=ToHighlight),size=3.5,
               data=df[idx, ])
-    # geom_text(aes(x=logFC+label.offset, y=Neg.Log10.P, label=ToHighlight),size=3.5,
-    #           data=df[idx, ])
+
  
 
   return(vplot)
@@ -798,21 +797,11 @@ dev.off()
 ## Lasso
 Lasso was run with the following parameters...
 
-The example I saw randomly sampled the whole dataset and then selected 1:N for class A and the remaining for class B.
-see replicate()
-
-I also need to ONLY change the training set, right? this would be because of the test error should be based on the true labels...
-and thus show that these genes are clearly the worse model, than the true postive model.
-
 ```{r warning=FALSE}
 #permutation with a single ground truth class assignment. 
 l1.tp <- runLasso(seset = degfilt.se)
 ```
 
-
-UGGHHHHH so I cant understand it, but the sample() function run BEFORE the runlass() function causes A HUGE decrease in the variablility of the sampling. It is litterally the same few distributions of the class labels.... 
-
-Also, I totally forgot to uncomment the code that save the results. so Yay. 
 
 ```{r}
 #oringinal data labels
@@ -857,10 +846,8 @@ permutation.res <- sapply(col.names, function(p){
   
 }, simplify = FALSE)
 
-saveRDS(permutation.res, "permutation_5000_res.RDS")
+# saveRDS(permutation.res, "permutation_5000_res.RDS")
 ```
-
-
 
 ```{r}
 l1.tp$test.error #(7%) # 0.06818182
@@ -868,23 +855,33 @@ l1.tp$test.error #(7%) # 0.06818182
 l1.tp$nonzero.coef
 ```
 
+ENSG00000078399.14 (HOXA9) had 0.2 Coeff
+
+
 ```{r}
 test.errors <- sapply(permutation.res, "[[", 1)
-head(test.errors)
+genes.perm <- sapply(permutation.res, "[[", 2) 
 ```
 
 ```{r}
-test.errors[test.errors < 0.1]
-permutation.res$perm_106
+random.goodPerformance <- test.errors[test.errors < 0.1]
+# permutation.res[names(random.goodPerformance)]
+# sum(names(permutation.res$perm_948[[2]]) %in% names(l1.tp$nonzero.coef))
+# which(names(permutation.res$perm_948[[2]]) %in% names(l1.tp$nonzero.coef))
 
-names(permutation.res$perm_106[[2]]) %in% names(l1.tp$nonzero.coef)
+sapply(permutation.res[names(random.goodPerformance)], function(x) sum(grepl("ENSG00000078399", names(x[[2]]))))
+sapply(permutation.res[names(random.goodPerformance)], function(x) sum(names(x[[2]]) %in% names(l1.tp$nonzero.coef)))
 
 # View(labs[,c(1:4,4+106),])
 ```
 
+
+Notably, of the 6 random trials in lasso that had a test error of less than 10%, 5/6 included HOXA9 with a positive coefficient
+Also, for each of these models, the only one gene in common with the ground truth model is HOXA9.
+
 ```{r}
 # jpeg("figures/test_errors_hist_5000x_permutations.tiff", height = 5, width = 5,  units="in", res=200)
-hist(test.errors, breaks = seq(0,1, by=0.05), 
+hist(test.errors, breaks = seq(0,1, by=0.025), 
      xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests \n with Lasso Regression")
 abline(v=l1.tp$test.error, col="red", lwd=2)
 # dev.off()
@@ -892,18 +889,12 @@ abline(v=l1.tp$test.error, col="red", lwd=2)
 
 ```{r}
 gene_tally <- data.frame(Gene=rownames(rowData(degfilt.se)))
-gene_tally[,paste("perm", 1:5000, sep="_")] <- NA
+gene_tally[,col.names] <- NA
 
 head(gene_tally[,1:5])
 ```
 
 ```{r}
-genes.perm <- sapply(permutation.res, "[[", 2) 
-head(genes.perm)
-```
-
-```{r}
-for (i in 1:5000)
 
 ```
 

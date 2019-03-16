@@ -11,7 +11,7 @@ output: html_document
 ```{r setup}
 library(knitr)
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE, fig.align='center', fig.height=5, fig.width=8, dpi = 600)
-knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
+knitr::opts_knit$set(root.dir = '~/ConsensusML/composite_code/rnotebook/')
 options(stringsAsFactors = FALSE)
 ```
 
@@ -31,7 +31,7 @@ getwd()
 
 ```{r}
 volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
-  
+  require(ggrepel)
 
 
   df <- data.frame(logFC=fit$coefficients[,1],
@@ -75,7 +75,7 @@ volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
           axis.title = element_text(size = 30),
           plot.margin = margin(2,2,2,2, unit = "mm")) +
     
-    geom_text(aes(x=logFC+label.offset, y=Neg.Log10.P, label=ToHighlight),size=3.5,
+    geom_text_repel(aes(x=logFC, y=Neg.Log10.P, label=ToHighlight),size=3.5,
               data=df[idx, ])
  
 
@@ -88,7 +88,7 @@ volcano_plot <- function(fit, cut.off=4, label.offset=0.5){
 #Read in Counts 
 
 ```{r}
-counts <- read.csv("Expn_Data/TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
+counts <- read.csv("data/TARGET_NBL_AML_RT_WT_HTSeq_Counts.csv",row.names = 1)
 
 head(counts[,1:5])
 dim(counts)
@@ -102,13 +102,11 @@ This was created by David Lee Using Python()
 See D-V-DLee for Github 
 
 ```{r}
-AML.CDE <- read.csv("Clinical_Data/AML_assay_clinical.csv", row.names = 1) 
+AML.CDE <- read.csv("../../Clinical_Data/AML_assay_clinical.csv", row.names = 1) 
 
 dim(AML.CDE)
 head(AML.CDE[,1:5])
-
 ```
-
 
 
 #Examine and Clean Clinical Data Elements
@@ -232,7 +230,7 @@ cpm <- cpm(dge,log = TRUE, prior.count = 1)
 #Differential Expression Analysis
 
 ```{r}
-source("JSmith_code/Limma_Voom_DE_Function.R")
+source("../../JSmith_code/Limma_Voom_DE_Function.R")
 ```
 
 
@@ -252,20 +250,20 @@ table(pheno)
 
 ```{r}
 DE.RG <- voom_DE(counts.df = counts.sub, ref="No",pheno=pheno)
+# save(DE.RG, file="data/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.rda")
 ```
 
 ```{r}
 head(DE.RG$DEGs)
 dim(DE.RG$DEGs)
-
 # write.csv(DE.RG$DEGs, "r_code/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.csv")
 ```
 
 
-```{r}
-tiff("JSmith_code/Results/RiskGroup_DEGs_VolcancoPlot.tiff", height = 8, width = 12, units="in", res=200)
-volcano_plot(fit = DE.RG$fit)
-dev.off()
+```{r fig.height=6, fig.width=10}
+# tiff("JSmith_code/Results/RiskGroup_DEGs_VolcancoPlot.tiff", height = 8, width = 12, units="in", res=200)
+volcano_plot(fit = DE.RG$fit,cut.off = 5.0)
+# dev.off()
 ```
 
 
