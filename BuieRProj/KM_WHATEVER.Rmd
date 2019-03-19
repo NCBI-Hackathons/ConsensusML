@@ -14,6 +14,9 @@ library(useful)
 library(ggplot2)
 library(e1071)
 library(ROCR)
+library(tidyverse) 
+library(cluster)  
+library(factoextra)
 
 
 '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -24,12 +27,6 @@ library(ROCR)
 Acute Myeloid Leukemia is a cancer affecting blood stem cells. Onset is sudden and affected cells can outcompete normal cells, resulted in complications and death. AML has multiple variants. Unlike staging used in many cancers AML affected cells are typed as part of treatment. These types serve to identify phenotypes of expression of the disease. Treatment is similar to other cancerns, involving radiation and chemotherapy. Relapse affects 50% of cases.
 
 # Data
-
-Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients. Patients with multiple records had later records excluded so that N=145 results were retained in the study. Among the 214?? genetic assays available, 1910 were included. (exclusion criterea here)
-
-## Aim #1 (depreciated)
-
-Identfiy relationships between categories of AML and genetic assay results
 
 
 ```{r read_data}
@@ -62,8 +59,16 @@ GeneRiskTrain <- cbind(TARGET.USI = CleanedWithGenes$TARGET.USI, Risk.group = Cl
 
 
 
+
+
+
 ```
 
+Our data included 993 patients with  AML. Each patient has demographic diagnostic and outcome data. Phenotyping and clinical data were not consistantly available in any case. Genetic assay data were available for 187 patients. Patients with multiple records had later records excluded so that N=145 observations were retained in the study. Among the 214?? genetic assays available, 1910 were included. (exclusion criterea here).
+
+## Aim #1 (depreciated)
+
+Identfiy relationships between categories of AML and genetic assay results.
 
 
 ### Analysis
@@ -76,12 +81,13 @@ Where phenotyping information were not available, we assumed the observation to 
 
 ```{r preparing_aim1_data}
 PatientAndPhenotypeOnly <- PatientList
-  
+
   # removing non mutation phenotyping information from DF
   PatientAndPhenotypeOnly[,c("Gender","Race",
                              "Ethnicity",
                              "Age.at.Diagnosis.in.Days",
                              "First.Event",
+                             "FLT3.ITD.allelic.ratio",
                              
   
                   "Event.Free.Survival.Time.in.Days",  
@@ -123,40 +129,80 @@ PatientAndPhenotypeOnly <- PatientList
   PatientAndPhenotypeOnly[PatientAndPhenotypeOnly == "Yes"| PatientAndPhenotypeOnly == "YES"] <- 1
   
   PatientAndPhenotypeOnly[-1] <- lapply(PatientAndPhenotypeOnly[-1], as.numeric)
+  
+#remove those of unknown risk 
+KMDF <- GeneRiskTrain
+
+KMDF <- KMDF[KMDF$Risk.group != "Unknown",]
+KMDF[KMDF$Risk.group == "Low",]$Risk.group <- "0"
+KMDF[KMDF$Risk.group == "Standard",]$Risk.group <- "2"
+KMDF[KMDF$Risk.group == "High",]$Risk.group <- "2"
+
+KMDF$Risk.group <- as.numeric(KMDF$Risk.group)
 ```
 
 
-### Identifying Phenotypes: K-means
+### Identifying Phenotypes Using Unsupervised Learning: K-means
 
 Data from all 993 patients were used to identify phenotypes. Patients had a variety of tests for cell mutation typing, including positive and negatives. However, all patients also had NA values across some tests. This aligns with clinical practice where a provider focuses on testing for certain types and, once an optimal course of treatment is identified, has no need to further specify the types of mutation. Because a step of clinical expertise was involved, we decided to identify all NA values has 0 (not found), under the assumption that, more likely than not, something not tested for was not expected by the expert. 
 
 Notably, rather than informing phenotypes through clinical or biological knowledge, we used the k-means unsupervised classification to group the available phenotype data. A synsitivity analysis of K= 20 to K=4 identified clustering of classes into groups of 4 across all values of K. Therefore the model of K = 4 was used to assign classes to the data.
 
 ```{r kmeans_clustering_analysis}
+set.seed(1000)
 KMeansReview <- PatientAndPhenotypeOnly
 #unlink("plots/kmeans/*.jpg")
-for(i in 20:4) {
+for(i in 20:2) {
   km.PatientPheno <- kmeans(PatientAndPhenotypeOnly[-1],i, nstart = 25)
   KMeansReview[,paste(i,"_k", sep = "")] <- km.PatientPheno$cluster
-  plot(km.PatientPheno)+ggsave(paste("plots/kmeans/",i,".jpg", sep = ""))
+  fviz_cluster(km.PatientPheno, data = PatientAndPhenotypeOnly[-1])+ggsave(paste("plots/kmeans/",i,".jpg", sep = ""))
+  #plot(km.PatientPheno)+ggsave(paste("plots/kmeans/",i,".jpg", sep = ""))
 
 }
 
 ```
+Using cluster analysis our data can be found in two distinct groups. 
+
 
 ```{r attaching_clusters_cleaned_data }
-GroupMatching <- KMeansReview[,c("TARGET.USI","4_k")]
-GroupMatching$KM <-  GroupMatching$`4_k`
-GroupMatching$`4_k` <- NULL
 
-CleanedWithGenesKM4 <- merge(CleanedWithGenes, GroupMatching, by = "TARGET.USI", all.x = TRUE)
+GeneWKM <- merge(KMDF,KMeansReview[,c("TARGET.USI","2_k")], by.x = "TARGET.USI")
+
 
 ```
-### UNFINISHED
+
+
+
+### Testing ASsociation of Outcome and Phenotype groups
+
+```{r}
+plot((Risk.group) ~ as.factor(`2_k`), data = GeneWKM)
+KMRGfit <- glm(as.factor(Risk.group) ~ as.factor(`2_k`), data = GeneWKM, family = "binomial")
+
+summary(KMRGfit)
+
+KMRGfit$coefficients[2]
+
+
+```
+logistic regression was used to test a relationship between Risk group and phenotype group. While a large difference was identified between groups, the result was highly insignificant.
 
 ## Aim 2
 
 Identify genes with strong associations between patient risk category and genetic eassay results using SVM
+
+### Assumptions
+
+```{r aggregating_risk_groups}
+SVMDF <- GeneRiskTrain
+
+SVMDF <- SVMDF[SVMDF$Risk.group != "Unknown",]
+SVMDF[SVMDF$Risk.group == "Low",]$Risk.group <- "0"
+SVMDF[SVMDF$Risk.group == "Standard" | SVMDF$Risk.group == "High",]$Risk.group <- "1"
+SVMDF$Risk.group <- as.numeric(SVMDF$Risk.group)
+```
+
+Our data included a variable for risk of condition (relapse?). This variable included some unknowns and 3 levels. In order to increase dichotomy, those of high or normal risk were assigned an indicator of 1, and low risk an indicator of 0.
 
 ```{r seanM_SVM_function}
 #The following function was developed by Sean Maden. It returns an object containing performance data on SVM models performed on both train and test data.
@@ -253,12 +299,7 @@ runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
 
 ```{r aim1_SVM}
 
-SVMDF <- GeneRiskTrain
 
-SVMDF <- SVMDF[SVMDF$Risk.group != "Unknown",]
-SVMDF[SVMDF$Risk.group == "Low",]$Risk.group <- "0"
-SVMDF[SVMDF$Risk.group == "Standard" | SVMDF$Risk.group == "High",]$Risk.group <- "1"
-SVMDF$Risk.group <- as.numeric(SVMDF$Risk.group)
 
 training <- SVMDF[SVMDF$train == 1, -c(1,2,3)]
 trainclass <- SVMDF[SVMDF$train == 1, "Risk.group"]
@@ -270,7 +311,7 @@ testclass <- SVMDF[SVMDF$train == 0, "Risk.group"]
 
 SVMResults <- runSVM(1000,"linear", training, as.factor(trainclass), testing, as.factor(testclass))
 
-colnames(SVMResults$weightsvect)
+
 weights <-SVMResults$weightsvect[1:1910]
 quantiles <- quantile(weights)
 
@@ -286,6 +327,7 @@ tenthquantiles <- quantile(weights, probs = seq(0,1,0.10))
 
 high10 <- tall[tall$V1 > tenthquantiles[10],]$names
 low10 <- tall[tall$V1 < tenthquantiles[2],]$names
+
 
 #applying 5% quantiles to narrow selection
 twentyquantiles <- quantile(weights, probs = seq(0,1,0.05))
@@ -308,13 +350,37 @@ onethousandthquantiles <- quantile(weights, probs = seq(0,1,0.001))
 high1000 <- tall[tall$V1 > onethousandthquantiles[1000],]$names
 low1000 <- tall[tall$V1 < onethousandthquantiles[2],]$names
 
+write.csv(high1000,"./output/High1000.csv")
+write.csv(low1000,"./output/low1000.csv")
+write.csv(high100,"./output/High100.csv")
+write.csv(low100,"./output/low100.csv")
+write.csv(high20,"./output/High20.csv")
+write.csv(low20,"./output/low20.csv")
+write.csv(high10,"./output/High10.csv")
+write.csv(low10,"./output/low10.csv")
+write.csv(high4,"./output/High4.csv")
+write.csv(low4,"./output/low4.csv")
+```
+
+SVM
+
+  Weights were divded into quartiles deciles, . Genes expressed in the outer two quantiles at the 25%, 20%, 1% and 0.1%. 3 of 4 genes in the .1% quartile were found to be associated with known AML genes and clinical outcomes.
+
+  
+
+## Aim 3
+
+Testing performance of QDA on survival and genetic data.
+
+```{r}
+SVMDF <- GeneRiskTrain
+
+SVMDF <- SVMDF[SVMDF$Risk.group != "Unknown",]
+SVMDF[SVMDF$Risk.group == "Low",]$Risk.group <- "0"
+SVMDF[SVMDF$Risk.group == "Standard" | SVMDF$Risk.group == "High",]$Risk.group <- "1"
+SVMDF$Risk.group <- as.numeric(SVMDF$Risk.group)
+
 
 ```
 
-Weights were divded into quartiles. Genes expressed in the outer two quartiles recorded for further analysis
-
-## Aim 3 (low priority, should include in aim 1 in rewrite)
-
-Test correlation between identified AML phenotypes and Risk Groups
-
-
+#times up!
