@@ -11,7 +11,7 @@ output: html_document
 ```{r setup}
 library(knitr)
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE, fig.align='center', fig.height=5, fig.width=8, dpi = 600)
-knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
+knitr::opts_knit$set(root.dir = '~/ConsensusML/')
 options(stringsAsFactors = FALSE)
 ```
 
@@ -178,7 +178,12 @@ qfiles <- files(fields=c("cases.project.project_id",default_fields('files'), gre
                          "analysis.analysis_type", "analysis.workflow_type", "analysis.workflow_version")) %>% 
   filter(~ type == 'gene_expression' & 
            analysis.workflow_type == 'HTSeq - Counts' &
-          (cases.project.project_id == "TARGET-AML" | cases.project.project_id == "TARGET-NBL" | cases.project.project_id == "TARGET-WT" | cases.project.project_id == "TARGET-CCSK" | cases.project.project_id == "TARGET-OS" | cases.project.project_id == "TARGET-RT")) 
+          (cases.project.project_id == "TARGET-AML" | 
+             cases.project.project_id == "TARGET-NBL" | 
+             cases.project.project_id == "TARGET-WT" | 
+             cases.project.project_id == "TARGET-CCSK" | 
+             cases.project.project_id == "TARGET-OS" | 
+             cases.project.project_id == "TARGET-RT")) 
 
 
 qfiles %>% count() #473
@@ -269,7 +274,7 @@ gdc_set_cache(directory = "Expn_Data/")
 
 ```{r}
 #download step
-fnames = gdcdata(manifest_df$id,progress=FALSE,access_method = "api", use_cached = FALSE)
+# fnames = gdcdata(manifest_df$id,progress=FALSE,access_method = "api", use_cached = FALSE)
 
 head(fnames)
 ```
