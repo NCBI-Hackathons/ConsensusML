@@ -7,6 +7,9 @@ output: html_notebook
 
 ---
 
+
+#Set-up 
+
 ```{r setup, include=FALSE}
 require(knitr)
 # knitr::opts_knit$set(root.dir = '~/Documents/GitHub/RNAseq_Cancer_Biomarkers/')
@@ -65,7 +68,7 @@ library(biomaRt)
 ```{r}
 # ML functions
 # Lasso
-runLasso <- function(seset, seed=2019){
+runLasso <- function(seset, seed=2019, type.measure="class"){
   # credit base code: Jenny Smith
   # runLasso
   # Fit a model using penalized regression with lasso
@@ -109,13 +112,14 @@ runLasso <- function(seset, seed=2019){
   cv.fit <- cv.glmnet(x[train.names,], y[train.names], family = "binomial",
                       type.logistic="modified.Newton", standardize = standardize,
                       lambda = grid, alpha=1, nfolds = length(train.names), #LOOCV 
-                      type.measure = "class", intercept = FALSE)
+                      type.measure = type.measure, intercept = FALSE)
   
   #Select lambda min.
   lambda.min <- cv.fit$lambda.min
   
   #predict the classes
   pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
+  pred.prob <- predict(fit, newx = x[test.names,], type="response", s=lambda.min)
   
   #find the test error
   tab <- table(pred.class,y[test.names])
@@ -136,6 +140,7 @@ runLasso <- function(seset, seed=2019){
                       "contrast"=contrast, 
                       "train.fit"=fit, 
                       "cv.fit"= cv.fit,
+                      "pred.probability"=pred.prob,
                       "confusionMatrix"=tab,
                       "test.error"=testError, 
                       "final.model"= final, 
@@ -458,6 +463,7 @@ load(paste0(data.dir, sys.sep, degfiltset.name))
 Summarized Experiment objects were created from TARGET AML clinical and RNA-seq data obtained from GDC. Gene counts from STAR 2-Pass alignment were converted using TMM into log counts-per-million scale. Differentially Expressed Genes were determined comparing classifier sample groups in the training sample subset only. Genes were pre-filered on whether at least 5 samples (set-wide) showing counts per mission greater than or equal to 1. 
 
 # Data Summaries and Pre-filtering Samples with Risk Group Available
+
 ```{r summarizeclin, eval=TRUE, echo=TRUE}
 # Summary statistics and prefiltering samples
 
@@ -549,6 +555,60 @@ plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.unadj),
 ```
 
 
+```{r}
+ensembl_ID_conversion <- function(Ensembl.IDs){
+
+  lib.path <- strsplit(version[['version.string']], ' ')[[1]][3] %>% 
+    gsub("\\.[0-9]{1,}$", "", . )  %>% 
+    paste0("/home/jlsmith3/R/x86_64-pc-linux-gnu-library/", .)
+  
+  library(biomaRt, lib.loc = lib.path)
+  
+ 
+  mart <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL", dataset = "hsapiens_gene_ensembl") 
+  attr.mart <-  c("ensembl_gene_id", "external_gene_name","hgnc_symbol")
+  
+  res <- getBM(attributes = attr.mart,
+                    filters = "ensembl_gene_id",
+                    values = Ensembl.IDs,
+                    mart = mart)
+  
+  return(res)
+}
+```
+
+
+```{r}
+DGE <- get(load("data/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.rda"))
+
+
+Ensembl.IDs <- data.frame(ensembl_gene_id=rownames(DGE$fit)) %>% 
+  mutate(ensembl_gene_id =gsub("\\.[0-9]{1,}", "", ensembl_gene_id  ))  %>% 
+  left_join(., ensembl_ID_conversion(Ensembl.IDs = .$ensembl_gene_id), 
+            by="ensembl_gene_id") %>% 
+  filter(!duplicated(ensembl_gene_id)) %>%  #1 ensemble ID mapped 2 different gene symbols. for simplicity, pick the first one. 
+  mutate_at(vars(external_gene_name,hgnc_symbol), funs(ifelse(is.na(.) | . == "", ensembl_gene_id, .))) %>% #fill in NA values 
+  mutate_at(vars(external_gene_name), funs(ifelse(duplicated(.), as.character(ensembl_gene_id), .))) %>% #fix duplicate IDs
+  mutate(ensembl_gene_id=factor(ensembl_gene_id,
+                                levels = gsub("\\.[0-9]{1,}", "", rownames(DGE$fit)))) %>% #re-order the same as the original input. 
+  arrange(ensembl_gene_id) 
+
+head(Ensembl.IDs)
+dim(Ensembl.IDs)
+
+#Update the fit to have official hgnc gene symbols. 
+identical(gsub("\\.[0-9]{1,}", "", rownames(DGE$fit)), as.character(Ensembl.IDs$ensembl_gene_id )) #TRUE
+rownames(DGE$fit$coefficients) <- Ensembl.IDs$external_gene_name
+```
+
+```{r message=FALSE, fig.height=6, fig.width=10}
+v <- volcano_plot(fit = DGE$fit, cut.off = 5)
+
+# jpeg("TARGET_AML_High.Std.Risk_vs_LowRisk_volcanoPlot.jpeg", height = 6, width = 10, units="in", res=200)
+v
+# dev.off()
+```
+
 
 # Heatmap Data Set Summaries
 
@@ -587,12 +647,18 @@ hmcol.tr = colorRamp2(c(-6,-3,-1,0,1,3,6), c("green3", "green2","green1","white"
 hm_colanno.train <- HeatmapAnnotation(show_legend = TRUE,
                                 df = data.frame(sampletype=seset$deg.risk,
                                                 gender=seset$Gender,
-                                                binom.age=seset$binom.age), 
+                                                binom.age=seset$binom.age, 
+                                                cyto=seset$Primary.Cytogenetic.Code), 
+                                
                                 col = list(sampletype = c("0" =  "blue","1" = "red"),
                                            gender = c("Male"="black","Female"="gray"),
-                                           binom.age = c("young"="pink","old"="green")),
+                                           binom.age = c("young"="pink","old"="green"), 
+                                           cyto=RColorBrewer::brewer.pal(6, name = "Set1") %>% 
+                                                  set_names(unique(seset$Primary.Cytogenetic.Code) %>% .[order(.)])),
+                                
                                 name = "Sample Type",
-                                annotation_height = unit(c(0.5, 0.5, 0.5), "cm"))
+                                annotation_height = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
+
 hm.train <- Heatmap(hm_data.train,
         col=hmcol.tr,
         cluster_columns = TRUE,
@@ -624,7 +690,6 @@ hm_data.test <- assay(seset)[!is.na(lfc.deg),] %>%
   scale() %>% 
   t()
 
-
 # breaks=seq(min(hm_data.test),max(hm_data.test),0.01)
 # range(hm_data.test) #-4.922743  5.044380
 hmcol.ts = colorRamp2(c(-6,-3,-1,0,1,3,6), c("green3", "green2","green1","white",
@@ -632,14 +697,17 @@ hmcol.ts = colorRamp2(c(-6,-3,-1,0,1,3,6), c("green3", "green2","green1","white"
 
 # hm col annotations can contain complex layered output and colored annotaions
 hm_colanno.test <- HeatmapAnnotation(show_legend = TRUE,
-                                df = data.frame(sampletype=seset$deg.risk,
+                                     df = data.frame(sampletype=seset$deg.risk,
                                                 gender=seset$Gender,
-                                                binom.age=seset$binom.age), 
-                                col = list(sampletype = c("0" =  "blue","1" = "red"),
+                                                binom.age=seset$binom.age, 
+                                                cyto=seset$Primary.Cytogenetic.Code), 
+                                      col = list(sampletype = c("0" =  "blue","1" = "red"),
                                            gender = c("Male"="black","Female"="gray"),
-                                           binom.age = c("young"="pink","old"="green")),
+                                           binom.age = c("young"="pink","old"="green"), 
+                                           cyto=RColorBrewer::brewer.pal(6, name = "Set1") %>% 
+                                                  set_names(unique(seset$Primary.Cytogenetic.Code) %>% .[order(.)])),
                                 name = "Sample Type",
-                                annotation_height = unit(c(0.5, 0.5, 0.5), "cm"))
+                                annotation_height = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 
 hm.test <- Heatmap(hm_data.test,
         col=hmcol.ts,
@@ -656,7 +724,7 @@ hm.test <- Heatmap(hm_data.test,
         row_title = "DEGs")
 ```
 
-```{r warning=FALSE, echo=FALSE}
+```{r warning=FALSE, echo=FALSE, fig.width=10}
 # jpeg("figures/TARGET_AML_TrainingSet_Heatmap.jpeg", 10, 5, units="in", res=400)
 draw(hm.test+hm.train)
 # dev.off()
@@ -667,27 +735,36 @@ draw(hm.test+hm.train)
 # Heatmap All Data
 #==================
 # Take normally dist data as heatmap matrix
-hm_data <- as.matrix(assay(degfilt.se))
+hm_data <- as.matrix(assay(degfilt.se)) %>% 
+  t() %>% 
+  scale() %>% 
+  t()
+
 # hm col annotations can contain complex layered output and colored annotaions
 hm_colanno <- HeatmapAnnotation(show_legend = TRUE,
-                                df = data.frame(sampletype=degfilt.se$deg.risk,
+                                     df = data.frame(sampletype=degfilt.se$deg.risk,
                                                 gender=degfilt.se$Gender,
-                                                binom.age=degfilt.se$binom.age,
-                                                subset=degfilt.se$exptset.seahack), 
-                                col = list(sampletype = c("0" =  "blue","1" = "red"),
+                                                binom.age=degfilt.se$binom.age, 
+                                                cyto=degfilt.se$Primary.Cytogenetic.Code), 
+                                      col = list(sampletype = c("0" =  "blue","1" = "red"),
                                            gender = c("Male"="black","Female"="gray"),
-                                           binom.age = c("young"="pink","old"="green"),
-                                           subset = c("test" = "orange", "train" = "purple")),
+                                           binom.age = c("young"="pink","old"="green"), 
+                                           cyto=RColorBrewer::brewer.pal(6, name = "Set1") %>% 
+                                                  set_names(unique(degfilt.se$Primary.Cytogenetic.Code) %>% .[order(.)])),
                                 name = "Sample Type",
                                 annotation_height = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
-breaks=seq(min(hm_data),max(hm_data),0.1)
-hmcol = colorRamp2(breaks,colorRampPalette(c("green","black","red"))(n=length(breaks)))
+
+# breaks=seq(min(hm_data),max(hm_data),0.1)
+# range(hm_data) #-6.178598  5.080216
+hmcol = colorRamp2(c(-6,-3,-1,0,1,3,6), c("green3", "green2","green1","white",
+                                              "red1","red2", "red3"))
+
 hm <- Heatmap(hm_data,
         col=hmcol,
         cluster_columns = TRUE,
         show_heatmap_legend = TRUE,
         top_annotation = hm_colanno,
-        name="log2_tmm_count",
+        name="row_z_scores",
         show_row_names = FALSE,
         show_column_names = FALSE,
         column_title = "Samples", 
@@ -698,12 +775,9 @@ hm <- Heatmap(hm_data,
 
 #hm
 
-jpeg(paste0(figs.dir, sys.sep, hmdeg.name), 8, 7, units="in", res=400)
-hm
-dev.off()
-
-# transverse heatmap with log2FC
-
+# jpeg(paste0(figs.dir, sys.sep, "TARGET_AML_full_data_Heatmap.jpeg"), 8, 7, units="in", res=400)
+draw(hm)
+# dev.off()
 ```
 
 
@@ -715,7 +789,6 @@ Results from iterations of model fitting and feature weighting analyses were sto
 ```{r standard_table_output}
 # Initialize the standard table to hold all test results
 standtable = as.data.frame(rowData(degfilt.se))
-
 ```
 
 ## Support Vector Machines
@@ -781,7 +854,7 @@ save(standtable, file = paste0(data.dir, sys.sep, "standardtable_mloutputs_summa
 # define absolute quantile filt
 qwfilt <- 0.75
 
-jpeg(paste0(figs.dir, sys.sep, "bpweights_svm4reps2.jpg"),11,9,units="in",res=400)
+# jpeg(paste0(figs.dir, sys.sep, "bpweights_svm4reps2.jpg"),11,9,units="in",res=400)
 par(mfrow=c(2,2),mar=c(5,3,5,2),oma=c(2,2,2,1))
 for(i in 1:length(svm.resultslist)){
   wi <- svm.resultslist[[i]]$weightsvect
@@ -796,7 +869,7 @@ for(i in 1:length(svm.resultslist)){
   }
   barplot(wbp,main=paste0("Rep ",i," Weights"), las=2, cex.names = 0.5)
 }
-dev.off()
+# dev.off()
 
 ```
 
@@ -807,6 +880,30 @@ Lasso was run with the following parameters...
 ```{r warning=FALSE}
 #permutation with a single ground truth class assignment. 
 l1.tp <- runLasso(seset = degfilt.se)
+
+l1.tp.auc <- runLasso(seset = degfilt.se,type.measure = "auc")
+```
+
+```{r}
+l1.tp$cv.fit$lambda.min
+l1.tp$test.error
+l1.tp$confusionMatrix
+
+cbind(l1.tp$pred.probability,l1.tp.auc$pred.probability, degfilt.se$deg.risk[degfilt.se$exptset.seahack == "test"])
+
+l1.tp$nonzero.coef#13
+```
+
+```{r}
+l1.tp.auc$cv.fit$lambda.min
+l1.tp.auc$test.error
+l1.tp.auc$confusionMatrix
+
+l1.tp.auc$nonzero.coef #22
+```
+
+```{r}
+venn.diagram(x=list("class"=names(l1.tp$nonzero.coef), "auc"=names(l1.tp.auc$nonzero.coef)),filename="class_vs_auc.tiff")
 ```
 
 
@@ -833,7 +930,7 @@ labs[idx,col.names] <- random.labels
 ```{r echo=FALSE}
 #Sanity check 
 # View(labs[,1:100])
-# write.csv(labs, "permutation_5000_labels.csv", row.names = FALSE)
+# write.csv(labs, "lasso_permutation_5000_labels.csv", row.names = FALSE)
 ```
 
 ```{r warning=FALSE}
@@ -853,7 +950,7 @@ permutation.res <- sapply(col.names, function(p){
   
 }, simplify = FALSE)
 
-# saveRDS(permutation.res, "permutation_5000_res.RDS")
+# saveRDS(permutation.res, "lasso_permutation_5000_res.RDS")
 ```
 
 ```{r}
@@ -861,8 +958,6 @@ l1.tp$test.error #(7%) # 0.06818182
 
 l1.tp$nonzero.coef
 ```
-
-ENSG00000078399.14 (HOXA9) had 0.2 Coeff
 
 
 ```{r}
