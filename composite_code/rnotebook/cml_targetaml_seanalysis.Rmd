@@ -124,17 +124,24 @@ runLasso <- function(seset, seed=2019){
   #Fit the full dataset.
   final <- glmnet(x, y,family = "binomial", standardize = standardize, 
                   lambda = grid, alpha = 1, intercept = FALSE)
+  
   #Extract the coefficients
   coef <- predict(final, type="coefficients", s=lambda.min)
   idx <- which(!as.numeric(coef)==0)
   nonZero <- coef[idx,]
   
   #Results 
-  resultslist <- list(train.names, test.names, contrast, fit, 
-                       cv.fit, tab, testError, final, nonZero, seed)
-  names(resultslist) <- c("training.set", "testing.set","contrast", "train.fit",
-                           "cv.fit", "confusionMatrix","test.error", "final.model", 
-                           "nonzero.coef", "seed")
+  resultslist <- list("training.set"=train.names, 
+                      "testing.set"=test.names, 
+                      "contrast"=contrast, 
+                      "train.fit"=fit, 
+                      "cv.fit"= cv.fit,
+                      "confusionMatrix"=tab,
+                      "test.error"=testError, 
+                      "final.model"= final, 
+                      "nonzero.coef"=nonZero, 
+                      "seed"=seed)
+
   return(resultslist)
 }
 
@@ -872,12 +879,14 @@ random.goodPerformance <- test.errors[test.errors < 0.1]
 sapply(permutation.res[names(random.goodPerformance)], function(x) sum(grepl("ENSG00000078399", names(x[[2]]))))
 sapply(permutation.res[names(random.goodPerformance)], function(x) sum(names(x[[2]]) %in% names(l1.tp$nonzero.coef)))
 
-# View(labs[,c(1:4,4+106),])
+# View(labs[,c(1:4,4+106),])  
 ```
 
 
 Notably, of the 6 random trials in lasso that had a test error of less than 10%, 5/6 included HOXA9 with a positive coefficient
 Also, for each of these models, the only one gene in common with the ground truth model is HOXA9.
+
+a 0.12% chance (6/5000) that these genes would randomly assign the correct risk group to the test set.  
 
 ```{r}
 # jpeg("figures/test_errors_hist_5000x_permutations.tiff", height = 5, width = 5,  units="in", res=200)
