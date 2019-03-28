@@ -1070,7 +1070,7 @@ addLassoCoeff <- function(resultslist){
   repcvar<- rep(0, nrow(degfilt.se))
   names(repcvar) <- rownames(degfilt.se)
   repcoeff <- resultslist$nonzero.coef
-  for(i in length(repcoeff)){
+  for(i in 1:length(repcoeff)){
     repcvar[names(repcoeff)[i]] <- as.numeric(repcoeff[i])
   }
   return(repcvar)
