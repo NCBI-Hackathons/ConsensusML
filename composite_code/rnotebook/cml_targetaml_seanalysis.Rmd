@@ -462,6 +462,7 @@ load(paste0(data.dir, sys.sep, degfiltset.name))
 # Data Preparation
 Summarized Experiment objects were created from TARGET AML clinical and RNA-seq data obtained from GDC. Gene counts from STAR 2-Pass alignment were converted using TMM into log counts-per-million scale. Differentially Expressed Genes were determined comparing classifier sample groups in the training sample subset only. Genes were pre-filered on whether at least 5 samples (set-wide) showing counts per mission greater than or equal to 1. 
 
+
 # Data Summaries and Pre-filtering Samples with Risk Group Available
 
 ```{r summarizeclin, eval=TRUE, echo=TRUE}
