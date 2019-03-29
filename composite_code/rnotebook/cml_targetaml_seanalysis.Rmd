@@ -66,8 +66,9 @@ library(biomaRt)
 
 ```
 
+## ML functions
+
 ```{r}
-# ML functions
 # Lasso
 runLasso <- function(seset, seed=2019, type.measure="class"){
   # credit base code: Jenny Smith
@@ -83,18 +84,15 @@ runLasso <- function(seset, seed=2019, type.measure="class"){
   require(SummarizedExperiment)
   require(MLmetrics)
   set.seed(seed) 
-  
-  gene.names = rownames(rowData(seset))
-  var.classifier = seset$deg.risk
-  df = t(assay(seset))
-  
+
   #define train/test sets 
   train.names = colnames(assay(seset[,seset$exptset.seahack=="train"]))
   test.names = colnames(assay(seset[,seset$exptset.seahack=="test"]))
   
   #define predictors and response variables
-  response <- var.classifier
-  predictors <- gene.names
+  df = t(assay(seset))
+  response <- seset$deg.risk
+  predictors <- rownames(seset)
   
   y <- factor(response); names(y) <- colnames(assay(seset)) # response var obj
   x = df[,predictors] # genes of interest
@@ -104,7 +102,7 @@ runLasso <- function(seset, seed=2019, type.measure="class"){
   grid <- 10^ seq(10,-2, length=100)
   
   #standardize is an option to mean center. 
-  #Don't use since we want to keep the natural variation and expression is already normalized for sample to  sample comparisons. 
+  #Don't use since we want to keep the natural variation and expression is already normalized for sample to  sample comparisons.
   standardize = FALSE
   
   fit <- glmnet(x[train.names,], y[train.names], family = "binomial", alpha=1, 
@@ -123,10 +121,12 @@ runLasso <- function(seset, seed=2019, type.measure="class"){
   pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
   pred.prob <- predict(fit, newx = x[test.names,], type="response", s=lambda.min)
   
+  
   #find the test error
   tab <- table(pred.class,y[test.names])
   testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
-  
+  log.loss <- LogLoss(y_pred = pred.prob[,1], y_true = as.numeric(as.character(y[test.names]))) #difference from predicted label to true label
+    
   #Fit the full dataset.
   final <- glmnet(x, y,family = "binomial", standardize = standardize, 
                   lambda = grid, alpha = 1, intercept = FALSE)
@@ -145,6 +145,7 @@ runLasso <- function(seset, seed=2019, type.measure="class"){
                       "pred.probability"=pred.prob,
                       "confusionMatrix"=tab,
                       "test.error"=testError, 
+                      "log.loss"=log.loss,
                       "final.model"= final, 
                       "nonzero.coef"=nonZero, 
                       "seed"=seed)
@@ -152,38 +153,39 @@ runLasso <- function(seset, seed=2019, type.measure="class"){
   return(resultslist)
 }
 
-
-
-# SVM
-runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
-                   testset,testclasses, weightfilt=FALSE){
+#Function for SVM classification. 
+runSVM <- function(seed,kerneltype="linear",seset, weightfilt=FALSE){
   # credit base code: Sean Maden
   # run SVM optimization
   # Arguments
   #   * seed : set seed (int) for randomization
   #   * kerneltype : (str) valid kernel type class for SVM (e.g. 'linear', 'radial', etc.)
-  #   * trainset : training dataset (excluding sample classes)
-  #   * trainclasses : classes for training sampels (vector) with 1:1 correspondence 
+  #   * seset : summarized expirment object with both test and training set data. 
+  #       * ndtr : training dataset (excluding sample classes)
+  #       * ndtr.classes : classes for training sampels (vector) with 1:1 correspondence 
   #       with trainset rows
-  #   * testset : test data (data frame or matrix), excluding classes
-  #   * testclasses : classes for test samples (vector), with 1:1 row:pos correspondence
+  #       * ndte : test data (data frame or matrix), excluding classes
+  #       * ndte.classes : classes for test samples (vector), with 1:1 row:pos correspondence
   #   * weightfilt : (FALSE or numeric float) top fraction weights to use in model 
   #       (if FALSE, then all weights used) 
   # Returns
   #   * rl (list) : list containing model fitted, predictions, and performacne metrics
-  require(e1071); require(ROCR)
+  require(e1071); require(ROCR); require(MLmetrics)
   rl <- list(); str.options <- ""
   set.seed(seed)
-  ndtr <- trainset
-  ndte <- testset
-  ndtr.classes <- trainclasses
-  ndte.classes <- testclasses
   
+  #training/testing sets
+  ndtr <- t(assay(seset[,seset$exptset.seahack=="train"]))
+  ndtr.classes <- seset[,seset$exptset.seahack=="train"]$deg.risk
+  
+  ndte <- t(assay(seset[,seset$exptset.seahack=="test"]))
+  ndte.classes <- seset[,seset$exptset.seahack=="test"]$deg.risk
   # train svm model
   svm_model <- svm(as.factor(ndtr.classes)~., 
                    data=ndtr, 
                    method="C-classification", 
-                   kernel=kerneltype)
+                   kernel=kerneltype,
+                   probability=TRUE)
   weightsvect <- ndtr.weights <- t(svm_model$coefs) %*% svm_model$SV
   if(weightfilt){
     str.options <- c(str.options,paste0("weight filt = ",weightfilt))
@@ -198,21 +200,29 @@ runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
     svm_model <- svm(as.factor(ndtr.classes)~., 
                      data=ndtr, 
                      method="C-classification", 
-                     kernel=kerneltype)
+                     kernel=kerneltype,
+                     probability=TRUE)
   } else{
     str.options <- c(str.options,"no weight filt")
   }
-  pred_train <- predict(svm_model, ndtr, decision.values = TRUE)
-  pred_test <- predict(svm_model, ndte, decision.values = TRUE)
+  
+  #training and test set predictions.
+  pred_train <- predict(svm_model, ndtr, decision.valuesq = TRUE, probability=TRUE)
+  pred_test <- predict(svm_model, ndte, decision.values = TRUE, probability=FALSE)
+  pred_test2 <- predict(svm_model, ndte, decision.values = TRUE, probability=TRUE)
+  #find the test errors
+  tab <- table(pred = pred_test, true = ndte.classes)
+  testError <- mean(pred_test != ndte.classes) #how many predicted classes were incorrect
+  log.loss <- LogLoss(y_pred = attr(pred_test2, which="probabilities")[,1], y_true = as.numeric(ndte.classes))
   # get performance metrics
   pred <- prediction(as.numeric(attr(pred_test,"decision.values")),ndte.classes)
   perf <- performance(pred,"tpr","fpr")
-  ppred <- pred_test[pred_test==1]; 
+  ppred <- pred_test[pred_test==1] 
   tppred <- ndte.classes[pred_test==1]
   ppred <- as.numeric(as.character(ppred))
   testprec <- length(ppred[ppred==tppred])/length(ppred) # test precision
   rposi <- ndte.classes==1
-  rtpred <- ndte.classes[rposi]; 
+  rtpred <- ndte.classes[rposi]
   rppred <- pred_test[rposi]
   rppred <- as.numeric(as.character(rppred))
   testrec <- length(rppred[rppred==1])/length(rppred) # test recall
@@ -223,25 +233,35 @@ runSVM <- function(seed,kerneltype="linear",trainset,trainclasses,
              weightsvect,
              pred_train,
              pred_test,
+             pred_test2,
              perf,
              tppred,
              testprec,
-             testrec)
+             testrec, 
+             tab,
+             testError, 
+             log.loss)
   names(rl) <- c("options_string",
                  "svm_model",
                  "weightsvect",
                  "predictions_train",
                  "predictions_test",
+                 "predictions_test2",
                  "performance_test",
                  "TPR_test",
                  "precision_test",
-                 "recall_test"
-  )
+                 "recall_test", 
+                 "confusionMatrix",
+                 "testError",
+                 "log.loss")
   return(rl)
   
 }
 
 ```
+
+
+## utility functions 
 
 ```{r utilityfunctions, eval=FALSE}
 # utilities for data summaries and visualization
@@ -294,6 +314,29 @@ voom_DE <- function(counts.df, ref, pheno){
   list <- list(design, v.lv, fit, table)
   names(list) <- c("desingMatrix", "voomTransformation", "fit", "DEGs")
   return(list)
+}
+
+#=================
+# Convert Ensmebl IDs to Gene Names
+#=================
+ensembl_ID_conversion <- function(Ensembl.IDs){
+
+  lib.path <- strsplit(version[['version.string']], ' ')[[1]][3] %>% 
+    gsub("\\.[0-9]{1,}$", "", . )  %>% 
+    paste0(.libPaths()[1], .) #uses first default lib.path.
+  
+  library(biomaRt, lib.loc = lib.path)
+  
+ 
+  mart <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL", dataset = "hsapiens_gene_ensembl") 
+  attr.mart <-  c("ensembl_gene_id", "external_gene_name","hgnc_symbol")
+  
+  res <- getBM(attributes = attr.mart,
+                    filters = "ensembl_gene_id",
+                    values = Ensembl.IDs,
+                    mart = mart)
+  
+  return(res)
 }
 
 #=================
@@ -557,43 +600,24 @@ plot(lfc.deg,-1*log10(rowData(degfilt.se)$p.unadj),
 
 ```
 
-
 ```{r}
-ensembl_ID_conversion <- function(Ensembl.IDs){
-
-  lib.path <- strsplit(version[['version.string']], ' ')[[1]][3] %>% 
-    gsub("\\.[0-9]{1,}$", "", . )  %>% 
-    paste0("/home/jlsmith3/R/x86_64-pc-linux-gnu-library/", .)
-  
-  library(biomaRt, lib.loc = lib.path)
-  
- 
-  mart <- useEnsembl(biomart = "ENSEMBL_MART_ENSEMBL", dataset = "hsapiens_gene_ensembl") 
-  attr.mart <-  c("ensembl_gene_id", "external_gene_name","hgnc_symbol")
-  
-  res <- getBM(attributes = attr.mart,
-                    filters = "ensembl_gene_id",
-                    values = Ensembl.IDs,
-                    mart = mart)
-  
-  return(res)
-}
-```
-
-
-```{r}
+#read in the Differentially Expressed genes
 DGE <- get(load("data/TARGET_AML_High.Std.Risk_vs_LowRisk_DEGs.rda"))
 
-
+#convert ensemble IDs to gene names in the Voom fit object
 Ensembl.IDs <- data.frame(ensembl_gene_id=rownames(DGE$fit)) %>% 
   mutate(ensembl_gene_id =gsub("\\.[0-9]{1,}", "", ensembl_gene_id  ))  %>% 
   left_join(., ensembl_ID_conversion(Ensembl.IDs = .$ensembl_gene_id), 
             by="ensembl_gene_id") %>% 
-  filter(!duplicated(ensembl_gene_id)) %>%  #1 ensemble ID mapped 2 different gene symbols. for simplicity, pick the first one. 
-  mutate_at(vars(external_gene_name,hgnc_symbol), funs(ifelse(is.na(.) | . == "", ensembl_gene_id, .))) %>% #fill in NA values 
-  mutate_at(vars(external_gene_name), funs(ifelse(duplicated(.), as.character(ensembl_gene_id), .))) %>% #fix duplicate IDs
+  #1 ensemble ID mapped 2 different gene symbols. for simplicity, pick the first one. 
+  filter(!duplicated(ensembl_gene_id)) %>%
+  #fill in NA values 
+  mutate_at(vars(external_gene_name,hgnc_symbol), funs(ifelse(is.na(.) | . == "", ensembl_gene_id, .))) %>%
+  #fix duplicate Gene names. Any duplicates stay ENSG identifier rather than remove. 
+  mutate_at(vars(external_gene_name), funs(ifelse(duplicated(.), as.character(ensembl_gene_id), .))) %>% 
+  #re-order the genes to be the same as the original input. 
   mutate(ensembl_gene_id=factor(ensembl_gene_id,
-                                levels = gsub("\\.[0-9]{1,}", "", rownames(DGE$fit)))) %>% #re-order the same as the original input. 
+                                levels = gsub("\\.[0-9]{1,}", "", rownames(DGE$fit)))) %>% #
   arrange(ensembl_gene_id) 
 
 head(Ensembl.IDs)
@@ -606,11 +630,11 @@ rownames(DGE$fit$coefficients) <- Ensembl.IDs$external_gene_name
 
 ```{r message=FALSE, fig.height=6, fig.width=10}
 v <- volcano_plot(fit = DGE$fit, cut.off = 5)
-
 # jpeg("TARGET_AML_High.Std.Risk_vs_LowRisk_volcanoPlot.jpeg", height = 6, width = 10, units="in", res=200)
 v
 # dev.off()
 ```
+
 
 
 # Heatmap Data Set Summaries
@@ -794,50 +818,37 @@ Results from iterations of model fitting and feature weighting analyses were sto
 standtable = as.data.frame(rowData(degfilt.se))
 ```
 
+
+
 ## Support Vector Machines
 The support vector machines (SVM) algorithm was run with the following parameters...
-```{r svm}
-# run SVM
 
-svmtrain = t(assay(degfilt.se[,degfilt.se$exptset.seahack=="train"]))
-svmtrainclasses <- degfilt.se[,degfilt.se$exptset.seahack=="train"]$deg.risk
-
-svmtest = t(assay(degfilt.se[,degfilt.se$exptset.seahack=="test"]))
-svmtestclasses <- degfilt.se[,degfilt.se$exptset.seahack=="test"]$deg.risk
-
+```{r}
 # Run 1 -- SVM with linear kernel, no weight filter
-svm1 <- runSVM(seed=50, kerneltype="linear", 
-               trainset=svmtrain, trainclasses = svmtrainclasses,
-               testset = svmtest, testclasses = svmtestclasses)
+svm1 <- runSVM(seed=50, kerneltype="linear", seset = degfilt.se)
 
 # Run 2 -- SVM with linear kernel, 50% weight filter
-svm2 <- runSVM(seed=50, kerneltype="linear", 
-               trainset=svmtrain, trainclasses = svmtrainclasses,
-               testset = svmtest, testclasses = svmtestclasses,
+svm2 <- runSVM(seed=50, kerneltype="linear", seset = degfilt.se,
                weightfilt = 0.5)
 
 # Run 3 -- SVM with linear kernel, no weight filter
-svm3 <- runSVM(seed=50, kerneltype="radial", 
-               trainset=svmtrain, trainclasses = svmtrainclasses,
-               testset = svmtest, testclasses = svmtestclasses)
+svm3 <- runSVM(seed=50, kerneltype="radial", seset = degfilt.se)
 
 # Run 4 -- SVM with linear kernel, 50% weight filter
-svm4 <- runSVM(seed=50, kerneltype="radial", 
-               trainset=svmtrain, trainclasses = svmtrainclasses,
-               testset = svmtest, testclasses = svmtestclasses,
+svm4 <- runSVM(seed=50, kerneltype="radial", seset = degfilt.se,
                weightfilt = 0.5)
 
 #=============================
 # form and save results list
 #=============================
 svm.resultslist = list("svm1"=svm1, "svm2"=svm2, "svm3"=svm3, "svm4"=svm4)
-save(svm.resultslist, file=paste0(data.dir, sys.sep, "svm4reps_resultslist.rda"))
+# save(svm.resultslist, file=paste0(data.dir, sys.sep, "svm4reps_resultslist.rda"))
 
 #==================================
 # append results (feature weights) 
 # to standard output table
 #==================================
-load(paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
+# load(paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
 cnames = c("svm1_weights","svm2_weights","svm3_weights","svm4_weights")
 for(i in 1:4){
   sr <- svm.resultslist[[i]]$weightsvect[1,]
@@ -848,8 +859,7 @@ for(i in 1:4){
   }
 }
 
-save(standtable, file = paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
-
+# save(standtable, file = paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
 ```
 
 ```{r svm_weights_plots}
@@ -876,39 +886,8 @@ for(i in 1:length(svm.resultslist)){
 
 ```
 
- 
-## Lasso
-Lasso was run with the following parameters...
 
-```{r warning=FALSE}
-#permutation with a single ground truth class assignment. 
-l1.tp <- runLasso(seset = degfilt.se)
-
-l1.tp.auc <- runLasso(seset = degfilt.se,type.measure = "auc")
-```
-
-```{r}
-l1.tp$cv.fit$lambda.min
-l1.tp$test.error
-l1.tp$confusionMatrix
-
-cbind(l1.tp$pred.probability,l1.tp.auc$pred.probability, degfilt.se$deg.risk[degfilt.se$exptset.seahack == "test"])
-
-l1.tp$nonzero.coef#13
-```
-
-```{r}
-l1.tp.auc$cv.fit$lambda.min
-l1.tp.auc$test.error
-l1.tp.auc$confusionMatrix
-
-l1.tp.auc$nonzero.coef #22
-```
-
-```{r}
-venn.diagram(x=list("class"=names(l1.tp$nonzero.coef), "auc"=names(l1.tp.auc$nonzero.coef)),filename="class_vs_auc.tiff")
-```
-
+###Permutation Test 
 
 ```{r}
 #oringinal data labels
@@ -923,7 +902,8 @@ col.names <- paste("perm",1:5000, sep="_")
 class.labels <- c(0,1) # 0 == low, 1 == high/std risk
 
 #create random class labels 
-random.labels <- replicate(5000, base::sample(class.labels, size = sum(labs$Set=="train"), replace = TRUE))
+random.labels <- replicate(5000, base::sample(class.labels, size = sum(labs$Set=="train"), 
+                                              replace = TRUE))
 
 #update the labels dataframe with the new randomly created classes. 
 labs[,col.names] <- labs$deg.risk
@@ -933,7 +913,7 @@ labs[idx,col.names] <- random.labels
 ```{r echo=FALSE}
 #Sanity check 
 # View(labs[,1:100])
-# write.csv(labs, "lasso_permutation_5000_labels.csv", row.names = FALSE)
+# write.csv(labs, "data/svm_permutation_5000_labels.csv", row.names = FALSE)
 ```
 
 ```{r warning=FALSE}
@@ -947,66 +927,54 @@ permutation.res <- sapply(col.names, function(p){
   #update the response variable to be the randomly assigned classes
   seset.per$deg.risk <-  labs[,p]
   
-  #run lasso with the randomly assigned group labels
-  lasso.perm <- runLasso(seset = seset.per, seed =  as.numeric(str_sub(p, 6))*7)
-  return(list(lasso.perm$test.error, lasso.perm$nonzero.coef))
-  
+  #run lasso with the randomly assigned group labels svm.perm <-
+  svm.perm <- runSVM(seed=as.numeric(str_sub(p, 6))*7, 
+         kerneltype="linear", 
+         seset =seset.per)
+
+  return(list(svm.perm$testError,svm.perm$log.loss, svm.perm$weightsvect))
+
 }, simplify = FALSE)
 
-# saveRDS(permutation.res, "lasso_permutation_5000_res.RDS")
+# saveRDS(permutation.res, "data/svm_permutation_5000_res.RDS")
 ```
-
-```{r}
-l1.tp$test.error #(7%) # 0.06818182
-
-l1.tp$nonzero.coef
-```
-
 
 ```{r}
 test.errors <- sapply(permutation.res, "[[", 1)
-genes.perm <- sapply(permutation.res, "[[", 2) 
+log.loss <- sapply(permutation.res, "[[", 2) 
+genes.weights <- sapply(permutation.res, "[[", 3)
 ```
 
 ```{r}
-random.goodPerformance <- test.errors[test.errors < 0.1]
+random.goodPerformance <- test.errors[test.errors < 0.2]
 # permutation.res[names(random.goodPerformance)]
-# sum(names(permutation.res$perm_948[[2]]) %in% names(l1.tp$nonzero.coef))
-# which(names(permutation.res$perm_948[[2]]) %in% names(l1.tp$nonzero.coef))
-
-sapply(permutation.res[names(random.goodPerformance)], function(x) sum(grepl("ENSG00000078399", names(x[[2]]))))
-sapply(permutation.res[names(random.goodPerformance)], function(x) sum(names(x[[2]]) %in% names(l1.tp$nonzero.coef)))
-
-# View(labs[,c(1:4,4+106),])  
+random.goodPerformance %>% length() #only 6 less than 20% test errpr
+quantile(test.errors) #min is 13% misclassified
+quantile(log.loss)
 ```
 
-
-Notably, of the 6 random trials in lasso that had a test error of less than 10%, 5/6 included HOXA9 with a positive coefficient
-Also, for each of these models, the only one gene in common with the ground truth model is HOXA9.
-
-a 0.12% chance (6/5000) that these genes would randomly assign the correct risk group to the test set.  
-
 ```{r}
-# jpeg("figures/test_errors_hist_5000x_permutations.tiff", height = 5, width = 5,  units="in", res=200)
-hist(test.errors, breaks = seq(0,1, by=0.025), 
-     xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests \n with Lasso Regression")
-abline(v=l1.tp$test.error, col="red", lwd=2)
+# jpeg("figures/svm_test_errors_hist_5000x_permutations.jpg", height = 5, width = 5,  units="in", res=200)
+hist(test.errors, breaks = seq(0,1, by=0.025),
+     xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests \n with SVM")
+abline(v=svm1$testError, col="red", lwd=2)
 # dev.off()
-```
 
-```{r}
-gene_tally <- data.frame(Gene=rownames(rowData(degfilt.se)))
-gene_tally[,col.names] <- NA
-
-head(gene_tally[,1:5])
-```
-
-```{r}
+# jpeg("figures/svm_log_loss_hist_5000x_permutations.jpg", height = 5, width = 5,  units="in", res=200)
+hist(log.loss, breaks = seq(0,1.3, by=0.025), 
+     xlab="Test Error", ylab="Number of Occurances", main="Log Loss from Permutation Tests \n with SVM")
+abline(v=svm1$log.loss, col="red", lwd=2)
+# dev.off()
 
 ```
 
 
-```{r lasso_allreps}
+ 
+## Lasso
+
+Lasso was run with the following parameters...
+
+```{r lasso_allreps, warning=FALSE}
 # lasso model fitting reps and analysis
 # lasso reps and model assessment
 # Note: reps of lasso were performed on DEGs for TARGET pediatric AML samples
@@ -1085,15 +1053,14 @@ if(identical(rownames(degfilt.se),rownames(standtable))){
   standtable$lasso_coef_rep3 <- addLassoCoeff(rep3)
 }
 
-save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
+# save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
 
 # length(intersect(rownames(standtable[!standtable$lasso_coef_rep1==0,]), rownames(standtable[!standtable$lasso_coef_rep2==0,]))) # 0
 # length(intersect(rownames(standtable[!standtable$lasso_coef_rep2==0,]), rownames(standtable[!standtable$lasso_coef_rep3==0,]))) # 0
 
 ```
 
-
-
+### Model Performance Metrics
 
 ```{r lasso_model_performance_plots}
 #==========================================
@@ -1141,7 +1108,7 @@ dfp$forvar <- forvar
 
 # graphs
 
-jpeg(paste0(figs.dir, sys.sep, "modelperf_lassoreps15.jpg"), 5,8,units="in",res=400)
+# jpeg(paste0(figs.dir, sys.sep, "modelperf_lassoreps15.jpg"), 5,8,units="in",res=400)
 par(mfrow=c(2,1),oma=c(2,2,2,1),mar=c(3,3,2,1))
 
 plot(dfp$rep, dfp$tpr, col="blue", ylim = c(0.6,1), 
@@ -1169,8 +1136,114 @@ legend("topleft", c("FDR","FOR"),
 
 mtext("Rep",side=1,line=3,cex=1)
 mtext("Value",side=2,line=1,cex=1, outer=TRUE)
-dev.off()
+# dev.off()
 ```
+
+
+###Permutation Test 
+
+```{r}
+#oringinal data labels
+labs <- data.frame(USI=degfilt.se$TARGET.USI, 
+                   Set=degfilt.se$exptset.seahack,
+                   Risk.group=degfilt.se$Risk.group, 
+                   deg.risk=degfilt.se$deg.risk)
+
+#define colnames for the random labels in the training set. 
+idx <- which(labs$Set=="train")
+col.names <- paste("perm",1:5000, sep="_")
+class.labels <- c(0,1) # 0 == low, 1 == high/std risk
+
+#create random class labels 
+random.labels <- replicate(5000, base::sample(class.labels, size = sum(labs$Set=="train"), replace = TRUE))
+
+#update the labels dataframe with the new randomly created classes. 
+labs[,col.names] <- labs$deg.risk
+labs[idx,col.names] <- random.labels
+```
+
+```{r echo=FALSE}
+#Sanity check 
+# View(labs[,1:100])
+# write.csv(labs, "lasso_permutation_5000_labels.csv", row.names = FALSE)
+```
+
+```{r warning=FALSE}
+#use sapply to create a list of the results of lasso for each permutation of class labels
+lassoPermutation.res <- sapply(col.names, function(p){
+  print(p)
+  
+  #a SE object that will be modified with the permutation labels
+  seset.per <- degfilt.se 
+  
+  #update the response variable to be the randomly assigned classes
+  seset.per$deg.risk <-  labs[,p]
+  
+  #run lasso with the randomly assigned group labels
+  lasso.perm <- runLasso(seset = seset.per, seed =  as.numeric(str_sub(p, 6))*7)
+  return(list(lasso.perm$test.error, lasso.perm$nonzero.coef))
+  
+}, simplify = FALSE)
+
+# saveRDS(lassoPermutation.res, "data/lasso_permutation_5000_res.RDS")
+lassoPermutation.res <- readRDS("data/lasso_permutation_5000_res.RDS")
+```
+
+```{r}
+rep1$test.error #(7%) # 0.06818182
+rep1$nonzero.coef
+```
+
+```{r}
+L.test.errors <- sapply(lassoPermutation.res, "[[", 1)
+L.genes.perm <- sapply(lassoPermutation.res, "[[", 2) 
+```
+
+```{r}
+L.random.goodPerformance <- test.errors[test.errors < 0.1]
+L.random.goodPerformance %>% length() #6
+
+quantile(L.test.errors)
+L.genes.perm[names(L.random.goodPerformance)]
+# sum(names(lassoPermutation.res$perm_948[[2]]) %in% names(l1.tp$nonzero.coef))
+# which(names(lassoPermutation.res$perm_948[[2]]) %in% names(l1.tp$nonzero.coef))
+
+# sapply(lassoPermutation.res[names(random.goodPerformance)], function(x) sum(grepl("ENSG00000078399", names(x[[2]]))))
+# sapply(lassoPermutation.res[names(random.goodPerformance)], function(x) sum(names(x[[2]]) %in% names(l1.tp$nonzero.coef)))
+
+
+```
+
+
+Notably, of the 6 random trials in lasso that had a test error of less than 10%, 5/6 included HOXA9 with a positive coefficient
+Also, for each of these models, the only one gene in common with the ground truth model is HOXA9.
+
+a 0.12% chance (6/5000) that these genes would randomly assign the correct risk group to the test set.  
+
+```{r}
+# jpeg("figures/test_errors_hist_5000x_permutations.tiff", height = 5, width = 5,  units="in", res=200)
+hist(test.errors, breaks = seq(0,1, by=0.025), 
+     xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests \n with Lasso Regression")
+abline(v=l1.tp$test.error, col="red", lwd=2)
+# dev.off()
+```
+
+```{r}
+gene_tally <- data.frame(Gene=rownames(rowData(degfilt.se)))
+gene_tally[,col.names] <- NA
+
+head(gene_tally[,1:5])
+```
+
+```{r}
+
+```
+
+
+
+
+
+###Gene Correlations 
 
 ```{r lasso_corgene_hm}
 # composite correlation heatmaps of lasso selected gene features
