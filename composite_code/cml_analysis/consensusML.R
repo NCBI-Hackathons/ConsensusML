@@ -139,13 +139,45 @@ rankdf.all = data.frame(lasso1=lasso1rank,
 cormat.all <- round(cor(rankdf.all,method="spearman"),3)
 
 # correlation analysis among gene subsets
-# among lasso1 genes
-rankdf.lasso1genes <- rankdf.all[which(!st$lasso_coef_rep1==0),]
-cormat.lasso1 <- round(cor(rankdf.lasso1genes, method="spearman"),3)
+# among lasso1 genes, with reranking
+stsub <- st[!st$lasso_coef_rep1==0,]
+pcdfsub <- pcdf[!st$lasso_coef_rep1==0,]
 
-# among xg5 genes
-rankdf.xg5genes <- rankdf.all[which(!st$xg5_imp==0),]
-cormat.xg5genes <- round(cor(rankdf.xg5genes, method="spearman"),3)
+lasso1rank = rank(stsub$lasso_coef_rep1)
+svm1rank = rank(stsub$svm1_weights)
+xg5rank = rank(stsub$xg5_imp)
+rf10krank = rank(stsub$rfnb_10k_MeanDecNodeImp)
+pcvc1sub <- rank(pcdfsub$cont_pca1)
+pcvc123sub <- rank(pcdfsub$cont_pca123)
+
+rankdf.sub = data.frame(lasso1=lasso1rank,
+                        svm1=svm1rank,
+                        xg5=xg5rank,
+                        rf10k=rf10krank,
+                        pcc1=pcvc1sub,
+                        pcc123=pcvc123sub)
+
+cormat.lasso1 <- round(cor(rankdf.sub, method="spearman"),3)
+
+# among xg5 genes, with reranking
+stsub <- st[!st$xg5_imp==0,]
+pcdfsub <- pcdf[!st$xg5_imp==0,]
+
+lasso1rank = rank(stsub$lasso_coef_rep1)
+svm1rank = rank(stsub$svm1_weights)
+xg5rank = rank(stsub$xg5_imp)
+rf10krank = rank(stsub$rfnb_10k_MeanDecNodeImp)
+pcvc1sub <- rank(pcdfsub$cont_pca1)
+pcvc123sub <- rank(pcdfsub$cont_pca123)
+
+rankdf.sub = data.frame(lasso1=lasso1rank,
+                        svm1=svm1rank,
+                        xg5=xg5rank,
+                        rf10k=rf10krank,
+                        pcc1=pcvc1sub,
+                        pcc123=pcvc123sub)
+
+cormat.xg5genes <- round(cor(rankdf.sub, method="spearman"),3)
 
 #-----------------------------
 # Correlations Visualizations
@@ -173,6 +205,28 @@ jpeg("corhmmulti_consensusimprank.jpg", 12, 4, units="in", res=400)
 grid.arrange(cp1,cp2,cp3,layout_matrix=matrix(c(1,2,3), nrow=1, byrow=TRUE))
 dev.off()
 
+#---------------------------------
+# Upset Plot of "Important" Genes
+#---------------------------------
+usig <- list()
+usig[["lasso1"]] = as.character(st[!st$lasso_coef_rep1==0,]$X)
+usig[["svm1"]] = as.character(st[abs(st$svm1_weights)>=0.008,]$X)
+usig[["rf10"]] = as.character(st[abs(st$rfnb_10k_MeanDecNodeImp)>=0.1,]$X)
+usig[["xg5"]] = as.character(st[!st$xg5_imp==0,]$X)
+usig[["pc1"]] = pccont[pccont$above_theoimp_pc1=="Y",]$name
+usig[["pc123"]] = pccont[pccont$above_theoimp_pc1=="Y",]$name
+
+for(i in 1:length(usig)){
+  names(usig)[i] <- paste0(names(usig)[i]," (",length(usig[[i]])," genes)",collapse="")
+}
+
+# upset for filtered gene lists
+jpeg("upset_cmlmodelgenes.jpg",7,5,units="in", res=400)
+upset(fromList(usig), order.by = "freq", nsets=length(usig),
+      sets.bar.color = "blue", main.bar.color = "red")
+grid.text("Overlap in Selected and Filtered\nModel Genes", x=0.65, y=0.95, gp=gpar(fontsize=9))
+dev.off()
+
 #---------------------
 # Compare GSE Results
 #---------------------
@@ -188,13 +242,6 @@ lnames = c("lasso1","svm1","rf10k","xg5")
 for(i in 1:4){
   lplot[[paste0(lnames[i]," (",length(lx[[i]])," genes)")]] <- lx[[i]]
 }
-
-# upset for filtered gene lists
-jpeg(paste0("upset_cmlmodelgenes.jpg",collapse=""),5,3,units="in", res=400)
-upset(fromList(lplot), order.by = "freq", nsets=length(lplot),
-      sets.bar.color = "blue", main.bar.color = "red")
-grid.text("Overlap in Selected and Filtered\nModel Genes", x=0.65, y=0.95, gp=gpar(fontsize=9))
-dev.off()
 
 # do GSE comparisons by model type
 dbs <- c("GO_Molecular_Function_2015", "GO_Cellular_Component_2015", "GO_Biological_Process_2015")
