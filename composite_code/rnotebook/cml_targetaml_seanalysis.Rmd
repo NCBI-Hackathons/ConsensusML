@@ -835,7 +835,7 @@ save(svm.resultslist, file=paste0(data.dir, sys.sep, "svm4reps_resultslist.rda")
 # append results (feature weights) 
 # to standard output table
 #==================================
-load(paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
+#load(paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
 cnames = c("svm1_weights","svm2_weights","svm3_weights","svm4_weights")
 for(i in 1:4){
   sr <- svm.resultslist[[i]]$weightsvect[1,]
