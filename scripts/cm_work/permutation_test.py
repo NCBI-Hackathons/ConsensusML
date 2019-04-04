@@ -38,4 +38,7 @@ rf = RandomForestClassifier(n_estimators=1000, max_depth=20, random_state=8, n_j
 rf_score, perm_scores, p_value = permutation_test_score(rf, X, y, n_permutations=5000, cv=3,
                                                         n_jobs=-1, scoring='neg_log_loss')
 
+perm_df = pd.DataFrame({'rf_score': [rf_score] * 5000, 'perm_scores': perm_scores,
+                        'p_value': [p_value] * 5000})
 
+pd.DataFrame.to_csv(perm_df, 'rf_permutation_test.csv')
