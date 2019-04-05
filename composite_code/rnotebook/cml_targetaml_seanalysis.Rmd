@@ -807,6 +807,8 @@ Results from iterations of model fitting and feature weighting analyses were sto
 ```{r standard_table_output}
 # Initialize the standard table to hold all test results
 standtable = as.data.frame(rowData(degfilt.se))
+rownames(standtable) <- standtable$ensembl_gene_id
+head(standtable)
 ```
 
 ## Support Vector Machines
@@ -836,21 +838,21 @@ svm.resultslist = list("svm1"=svm1, "svm2"=svm2, "svm3"=svm3, "svm4"=svm4)
 # append results (feature weights) 
 # to standard output table
 #==================================
-<<<<<<< HEAD
+# <<<<<<< HEAD
 # load(paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
-=======
+# =======
 #load(paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
->>>>>>> d0d1fd923abc3baadb443df9c8c649b35201a645
+# >>>>>>> d0d1fd923abc3baadb443df9c8c649b35201a645
 cnames = c("svm1_weights","svm2_weights","svm3_weights","svm4_weights")
 for(i in 1:4){
-  sr <- svm.resultslist[[i]]$weightsvect[1,]
+  sr <- svm.resultslist[[i]]$weightsvect[1,] %>% set_names(gsub("\\.[0-9]{1,}","", names(.)))
   sv <- sr[order(match(names(sr), rownames(standtable)))]
   if(identical(names(sr), rownames(standtable))){
     standtable$newvar <- sv
     colnames(standtable) <- c(colnames(standtable)[1:ncol(standtable)-1],cnames[i])
   }
 }
-
+head(standtable)
 # save(standtable, file = paste0(data.dir, sys.sep, "standardtable_mloutputs_summary.rda"))
 ```
 
@@ -930,6 +932,7 @@ permutation.res <- sapply(col.names, function(p){
 }, simplify = FALSE)
 
 # saveRDS(permutation.res, "data/svm_permutation_5000_res.RDS")
+# permutation.res <- readRDS("data/svm_")
 ```
 
 ```{r}
@@ -1033,19 +1036,19 @@ save(lasso.resultslist, file = paste0(data.dir, sys.sep, "lasso_resultslist.rda"
 #======================================================
 addLassoCoeff <- function(resultslist){
   repcvar<- rep(0, nrow(degfilt.se))
-  names(repcvar) <- rownames(degfilt.se)
+  names(repcvar) <- rownames(degfilt.se) 
   repcoeff <- resultslist$nonzero.coef
   for(i in 1:length(repcoeff)){
     repcvar[names(repcoeff)[i]] <- as.numeric(repcoeff[i])
   }
+  names(repcvar) <- gsub("\\.[0-9]{1,}","",names(repcvar))
   return(repcvar)
 }
 
-if(identical(rownames(degfilt.se),rownames(standtable))){
-  standtable$lasso_coef_rep1 <- addLassoCoeff(rep1)
-  standtable$lasso_coef_rep2 <- addLassoCoeff(rep2)
-  standtable$lasso_coef_rep3 <- addLassoCoeff(rep3)
-}
+standtable$lasso_coef_rep1 <- addLassoCoeff(rep1)[rownames(standtable)]
+standtable$lasso_coef_rep2 <- addLassoCoeff(rep2)[rownames(standtable)]
+standtable$lasso_coef_rep3 <- addLassoCoeff(rep3)[rownames(standtable)]
+head(standtable)
 
 # save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
 
@@ -1053,6 +1056,7 @@ if(identical(rownames(degfilt.se),rownames(standtable))){
 # length(intersect(rownames(standtable[!standtable$lasso_coef_rep2==0,]), rownames(standtable[!standtable$lasso_coef_rep3==0,]))) # 0
 
 ```
+
 
 ### Model Performance Metrics
 
@@ -1222,21 +1226,7 @@ abline(v=l1.tp$test.error, col="red", lwd=2)
 # dev.off()
 ```
 
-```{r}
-gene_tally <- data.frame(Gene=rownames(rowData(degfilt.se)))
-gene_tally[,col.names] <- NA
-
-head(gene_tally[,1:5])
-```
-
-```{r}
-
-```
-
-
-
-
-
+### Feature Correlations 
 
 ```{r lasso_corgene_hm}
 # composite correlation heatmaps of lasso selected gene features
@@ -1374,6 +1364,7 @@ dev.off()
 
 ```
 
+
 ## Random Forest
 Random forest, a type of ensemble learning method, was applied. We varied the number of trees from 2,000 to 10,000.
 
@@ -1395,6 +1386,7 @@ rfdat.test <- as.data.frame(t(assay(deg.seset[,deg.seset$exptset.seahack=="test"
 rf2k <- randomForest(class ~ .,
                      data = rfdat.train,
                      ntree = 2000,
+                     importance=TRUE,
                      proximity = TRUE)
 
 rf5k <- randomForest(class ~ .,
@@ -1410,7 +1402,21 @@ rf10k <- randomForest(class ~ .,
 pred.rf2k <- predict(rf2k, rfdat.test,'response')
 pred.rf5k <- predict(rf5k, rfdat.test,'response')
 pred.rf10k <- predict(rf10k, rfdat.test,'response')
+```
 
+```{r}
+t <- rf2k$importance %>% 
+  as.data.frame() %>% 
+  rownames_to_column("Gene") %>%
+  arrange(desc(MeanDecreaseAccuracy)) #%>% 
+  # filter(grepl("ENSG00000078399", Gene))
+  
+head(t, n=20)
+```
+
+
+```{r}
+#Find Test Error
 cm.2k <- table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
       predicted = pred.rf2k)
 
@@ -1424,7 +1430,7 @@ rf.resultlist.name = "rf_noboost_2k5k10ktrees_allresultslist.rda"
 rf.returnlist <- list('rf2k.results'=list('fitmodel'=rf2k,'conf.matrix'=cm.2k),
                       'rf5k.results'=list('fitmodel'=rf5k,'conf.matrix'=cm.5k),
                       'rf10k.results'=list('fitmodel'=rf10k,'conf.matrix'=cm.10k))
-save(rf.returnlist, file=paste0(data.dir, sys.sep, rf.resultlist.name))
+# save(rf.returnlist, file=paste0(data.dir, sys.sep, rf.resultlist.name))
 
 #==============================
 # Append results to std. table
@@ -1446,7 +1452,7 @@ standtable$rfnb_2k_MeanDecNodeImp <- as.numeric(getRFIvar(rfmodel=rf2k))
 standtable$rfnb_5k_MeanDecNodeImp <- as.numeric(getRFIvar(rfmodel=rf5k))
 standtable$rfnb_10k_MeanDecNodeImp <- as.numeric(getRFIvar(rfmodel=rf10k))
 
-save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
+# save(standtable, file = paste0(data.dir, sys.sep, stdtable.name))
 ```
 
 ```{r rf_importanceplots}
@@ -1650,11 +1656,118 @@ dev.off()
 
 ```
 
+
 # Machine Learning Summary
 
 ```{r write_standtable_csv}
 write.csv(standtable, file=paste0(data.dir, sys.sep, "standouttable.csv"))
 ```
+
+#Gene Ontology 
+
+```{r}
+# BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(goseq)
+library(gage)
+
+data("kegg.gs")
+kg.hsa=kegg.gsets("hsa")
+
+```
+
+```{r message=FALSE, warning=FALSE}
+supportedOrganisms() %>%
+  filter(grepl("hg19|hg38", Genome))
+```
+
+## GO and KEGG Enrichment for all DEGs
+
+```{r}
+#All input genes from the 
+genes <- rownames(DGE$voomTransformation$E) %>% 
+  gsub("\\.[0-9]{1,}", "", .)
+
+#DEGs present in the genes 'universe'
+all.degs <- ifelse(genes %in% standtable$ensembl_gene_id , 1,0) %>% 
+  set_names(genes)
+table(all.degs)
+
+all.pwf <- nullp(all.degs, "hg38", "ensGene")
+
+all.GO <- goseq(all.pwf, "hg38", "ensGene",
+               test.cats=c("GO:BP", "GO:MF"), 
+               method="Wallenius") %>%
+  mutate(FDR=p.adjust(over_represented_pvalue, method = "BH")) %>%
+  filter(FDR < 0.1) %>% 
+  filter(numInCat > 20 & numInCat < 450)
+
+head(all.GO) 
+dim(all.GO) #518
+```
+
+```{r}
+all.KEGG <- goseq(all.pwf, "hg38", "ensGene",
+               test.cats=c("KEGG"), 
+               method="Wallenius") %>%
+  mutate(FDR=p.adjust(over_represented_pvalue, method = "BH")) %>%
+  filter(FDR < 0.1) %>% 
+  filter(numInCat > 20 & numInCat < 450) %>% 
+  left_join(.,  data.frame(PathwayName=names(kg.hsa$kg.sets)) %>% 
+              mutate(Pathway_Accession=gsub("hsa","", PathwayName) %>% 
+                       gsub("(^[0-9]{5})\\D+[A-Za-z0-9].+", "\\1", .)), 
+            by=c("category"="Pathway_Accession"))
+
+head(all.KEGG)
+dim(all.KEGG)
+# write.csv(all.KEGG, "data/TARGET_AML_High.Std.Risk_vs_LowRisk_KEGG.csv", row.names = FALSE)
+```
+
+##Examination of Selected Features by Lasso, Weight, or Importance 
+
+
+```{r}
+lasso.features <- names(rep1$nonzero.coef) %>% 
+  gsub("\\.[0-9]{1,}","", .)
+
+lasso.1_All <-  ifelse(genes %in% lasso.features , 1,0) %>% 
+  set_names(genes)
+table(lasso.1_All)
+
+lasso.1_All.pwf <- nullp(lasso.1_All, "hg38", "ensGene")
+
+lasso.1_DEGs <- ifelse( standtable$ensembl_gene_id %in% lasso.features , 1,0) %>% 
+  set_names(standtable$ensembl_gene_id )
+table(lasso.1_DEGs)
+
+lasso.1_DEGs.pwf <- nullp(lasso.1_DEGs, "hg38", "ensGene")
+```
+
+```{r}
+lasso.1_All.GO <- goseq(lasso.1_All.pwf, "hg38", "ensGene",
+               test.cats=c("GO:BP", "GO:MF"), 
+               method="Wallenius") %>%
+  mutate(FDR=p.adjust(over_represented_pvalue, method = "BH")) %>%
+  # filter(FDR < 0.1) %>% 
+  filter(numInCat > 20 & numInCat < 450) %>%
+  arrange(desc(numDEInCat), over_represented_pvalue)
+
+head(lasso.1_All.GO)
+```
+
+```{r}
+lasso.1_DEGs.GO <- goseq(lasso.1_DEGs.pwf, "hg38", "ensGene",
+               test.cats=c("GO:BP", "GO:MF"), 
+               method="Wallenius") %>%
+  mutate(FDR=p.adjust(over_represented_pvalue, method = "BH")) %>%
+  # filter(FDR < 0.1) %>% 
+  filter(numInCat > 20 & numInCat < 450) %>% 
+  arrange(desc(numDEInCat), over_represented_pvalue)
+
+head(lasso.1_DEGs.GO)
+```
+
+
 
 # Results Summaries
 
