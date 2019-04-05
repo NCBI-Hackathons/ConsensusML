@@ -1,0 +1,7 @@
+﻿Strategy,Description,Importance_Metric,Importance_Criteria
+PCC1,Feature variance contributions to component 1 in PCA.,Variance contribution,Above null
+PCC123,"Feature variance contributions to components 1, 2, and 3, in PCA.",Variance contribution,Above null
+Lasso,Initial rep of LASSO runs (least absolute shrinkage and selection operator).,Model coefficient,Selection (!=0)
+SVM,"Initial rep of support vector machines run (linear kernel, no weight filter).",Model weight,90th quantile (>0.08 abs. weight)
+RF,"Random forest run with 10,000 trees (rep 3).",Importance (mean decline in node purity),90th quantile (>0.01)
+XGBoost,"XGBoost run rep 5 (max depth 500, nrounds 100). ",Importance,Selection (>0)
