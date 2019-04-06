@@ -4,6 +4,7 @@ from tqdm import tqdm
 import warnings
 from sklearn.ensemble import  RandomForestClassifier
 from collections import Counter
+from boruta import BorutaPy
 
 from data_prep import create_x_y_data
 
