@@ -37,6 +37,6 @@ def feature_counter(bf):
     df = pd.DataFrame(boruta_counter, index=[0]).T
     return df
 
-bf = boruta_bootstrap(1, X, y)
+bf = boruta_bootstrap(1000, X, y)
 df = feature_counter(bf)
 pd.DataFrame.to_csv(df, 'bootstrap_boruta.csv')
