@@ -1658,4 +1658,10 @@ write.csv(standtable, file=paste0(data.dir, sys.sep, "standouttable.csv"))
 
 # Results Summaries
 
+
 # R Env log
+
+```{r}
+sessionInfo()
+```
+
