@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Bootstrapping Boruta Permutations"
 output:
   pdf_document: default
   html_notebook: default
