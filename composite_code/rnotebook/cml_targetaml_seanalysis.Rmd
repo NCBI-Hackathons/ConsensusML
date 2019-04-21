@@ -1771,4 +1771,10 @@ head(lasso.1_DEGs.GO)
 
 # Results Summaries
 
+
 # R Env log
+
+```{r}
+sessionInfo()
+```
+
