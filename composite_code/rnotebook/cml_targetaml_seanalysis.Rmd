@@ -66,6 +66,8 @@ library(biomaRt)
 
 ```
 
+## ML Functions
+
 ```{r}
 # Lasso
 runLasso <- function(seset, seed=2019, type.measure="class"){
@@ -1663,6 +1665,8 @@ dev.off()
 write.csv(standtable, file=paste0(data.dir, sys.sep, "standouttable.csv"))
 ```
 
+
+
 #Gene Ontology 
 
 ```{r}
@@ -1724,7 +1728,6 @@ dim(all.KEGG)
 ```
 
 ##Examination of Selected Features by Lasso, Weight, or Importance 
-
 
 ```{r}
 lasso.features <- names(rep1$nonzero.coef) %>% 

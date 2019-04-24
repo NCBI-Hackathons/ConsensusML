@@ -135,10 +135,6 @@ AML.CDE.s <- AML.CDE %>%
     Primary.Cytogenetic.Code == "Unknown" ~ "Unknown", 
     TRUE ~ "No")) %>%
   
-  #Add columns for transformed numeric clinical variables
-  # mutate(Blasts.log2=, 
-  #        Age.Years=)
-  
   #change the TARGET.USI to be identical format to the colnames in counts 
   mutate_at(vars(TARGET.USI), funs(gsub("-", "\\.", .))) %>% 
   set_rownames(.$TARGET.USI)
@@ -545,10 +541,85 @@ table(data_balanced_both$cls)
 
 
 
+#Clinical Sample Characteristics 
+
+```{r}
+library(compareGroups)
+```
+Race, Ethnicity,
+```{r}
+fn <- function(col){ifelse(grepl("Unknown", col, ignore.case = TRUE), NA, col)}
+dat <- AML.CDE.s %>% 
+  filter(Risk.group != "Unknown") %>% 
+  mutate(BRG=RiskGroup.Class) %>% 
+  dplyr::select(BRG,Gender, Age.at.Diagnosis.in.Days,WBC.at.Diagnosis, Bone.marrow.leukemic.blast.percentage...., Peripheral.blasts....,FAB.Category,FLT3.ITD.positive.,CEBPA.mutation, NPM.mutation,matches("inv.16|^t\\.|del")) %>% 
+  mutate_if(.predicate = is.character, .funs = fn) %>% 
+  mutate_at(vars(FLT3.ITD.positive.), funs(ifelse(.=="NO", "No", .))) %>% 
+  mutate_at(vars(Bone.marrow.leukemic.blast.percentage....), funs(as.numeric(as.character(.))))
 
 
+dim(dat)
+head(dat)
+```
+
+```{r}
+# sapply(dat, table, useNA="always")
+```
+ref="No", ref.no = "No", ref.y="No", 
+```{r}
+comp <- compareGroups(BRG ~ ., data = dat,method=4,Q1=0, Q3=1, include.miss = "No")
+```
+
+```{r}
+tab <- createTable(comp)
+```
 
 
+```{r}
+# tab
+export2word(tab, "/Users/jlsmith3/ConsensusML/composite_code/rnotebook/data/Binary_Risk_Group_Clin_Characteristics.docx")
+```
 
+#Kaplan-Meier Curves
+
+```{r}
+library(survival)
+library(survminer)
+```
+
+```{r}
+AML.CDE.s <- AML.CDE.s %>% 
+  filter(RiskGroup.Class != "Unknown") %>% 
+  mutate(BRG=RiskGroup.Class) %>% 
+  mutate(Event.ID=ifelse(First.Event == "Censored", 0, 1)) %>% 
+  mutate(OS.ID=ifelse(Vital.Status == "Alive", 0, 1))
+```
+
+```{r}
+fit <- survfit(Surv(Overall.Survival.Time.in.Days/365.25, OS.ID) ~ BRG, data = AML.CDE.s)
+
+
+km <- ggsurvplot(
+  fit, 
+  data = AML.CDE.s, 
+  size = 1,                 # change line size
+  palette = 
+    c("blue", "red"),# custom color palettes
+  conf.int = TRUE,          # Add confidence interval
+  pval = TRUE,              # Add p-value
+  risk.table = TRUE,        # Add risk table
+  risk.table.col = "strata",# Risk table color by groups
+  # surv.median.line="hv",
+  facet.by = "train_test_set",
+  risk.table.height = 0.25, # Useful to change when you have multiple groups
+  ggtheme = theme_bw(), # Change ggplot2 theme
+  xlab="Time (years)", 
+  # font.x=20
+) +
+  theme(axis.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.text = element_text(size=12))
+km
+```
 
 
