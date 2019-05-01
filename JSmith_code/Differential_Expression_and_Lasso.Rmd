@@ -11,7 +11,7 @@ output: html_document
 ```{r setup}
 library(knitr)
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE, fig.align='center', fig.height=5, fig.width=8, dpi = 600)
-knitr::opts_knit$set(root.dir = '~/ConsensusML/composite_code/rnotebook/')
+knitr::opts_knit$set(root.dir = '~/scripts/ConsensusML/composite_code/rnotebook/')
 options(stringsAsFactors = FALSE)
 ```
 
@@ -118,7 +118,7 @@ AML.CDE.s <- AML.CDE %>%
   
   #filter out non-diagnostic samples for now
   filter(! grepl( "04A|40A|02A|06A|11A", Diagnostic.ID)) %>% 
-  select(-matches("^ENSG")) %>% #remove the Norm Counts - since later on these become an issue with DE analysis results 
+  dplyr::select(-matches("^ENSG")) %>% #remove the Norm Counts - since later on these become an issue with DE analysis results 
   
   #clean up the levels 
   mutate_at(vars(c(45:47)), funs(gsub("NO", "No", .))) %>%
@@ -543,10 +543,10 @@ table(data_balanced_both$cls)
 
 #Clinical Sample Characteristics 
 
-```{r}
+```{r message=FALSE}
 library(compareGroups)
 ```
-Race, Ethnicity,
+
 ```{r}
 fn <- function(col){ifelse(grepl("Unknown", col, ignore.case = TRUE), NA, col)}
 dat <- AML.CDE.s %>% 
@@ -565,7 +565,7 @@ head(dat)
 ```{r}
 # sapply(dat, table, useNA="always")
 ```
-ref="No", ref.no = "No", ref.y="No", 
+
 ```{r}
 comp <- compareGroups(BRG ~ ., data = dat,method=4,Q1=0, Q3=1, include.miss = "No")
 ```
@@ -610,16 +610,27 @@ km <- ggsurvplot(
   risk.table = TRUE,        # Add risk table
   risk.table.col = "strata",# Risk table color by groups
   # surv.median.line="hv",
-  facet.by = "train_test_set",
-  risk.table.height = 0.25, # Useful to change when you have multiple groups
+  # facet.by = "train_test_set",
+  risk.table.height = 0.3, # Useful to change when you have multiple groups
   ggtheme = theme_bw(), # Change ggplot2 theme
-  xlab="Time (years)", 
-  # font.x=20
-) +
-  theme(axis.text = element_text(size=12),
-        strip.background = element_blank(),
-        strip.text = element_text(size=12))
+  xlab="Time (years)",
+  fontsize = 6,
+  font.x=14,
+  font.y=14,
+  title = "Overall Survival in Pediatric AML"
+) 
+
+
+#Use only with faceted data
+# km <- km + 
+#   theme(axis.text = element_text(size=12),
+#         strip.background = element_blank(),
+#         strip.text = element_text(size=12))
+
+
+tiff("figures/TARGET_AML_KM_plot.tiff",height = 5, width = 6, units = "in", res = 300)
 km
+dev.off()
 ```
 
 

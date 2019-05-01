@@ -123,8 +123,11 @@ runLasso <- function(seset, seed=2019, type.measure="class"){
   
   #find the test error
   tab <- table(pred.class,y[test.names])
-  testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
-  log.loss <- LogLoss(y_pred = pred.prob[,1], y_true = as.numeric(as.character(y[test.names]))) #difference from predicted label to true label
+  #missclassification: how many predicted classes were incorrect
+  testError <- mean(pred.class != y[test.names])
+  #difference from predicted label to true label
+  log.loss <- LogLoss(y_pred = pred.prob[,1],
+                      y_true = as.numeric(as.character(y[test.names]))) 
     
   #Fit the full dataset.
   final <- glmnet(x, y,family = "binomial", standardize = standardize, 
@@ -258,6 +261,7 @@ runSVM <- function(seed,kerneltype="linear",seset, weightfilt=FALSE){
 }
 ```
 
+##Utilites
 
 ```{r utilityfunctions, eval=FALSE}
 # utilities for data summaries and visualization
@@ -813,8 +817,11 @@ rownames(standtable) <- standtable$ensembl_gene_id
 head(standtable)
 ```
 
+
 ## Support Vector Machines
+
 The support vector machines (SVM) algorithm was run with the following parameters...
+
 ```{r}
 # Run 1 -- SVM with linear kernel, no weight filter
 svm1 <- runSVM(seed=50, kerneltype="linear", seset = degfilt.se)
@@ -916,7 +923,11 @@ labs[idx,col.names] <- random.labels
 ```{r warning=FALSE}
 #use sapply to create a list of the results of lasso for each permutation of class labels
 permutation.res <- sapply(col.names, function(p){
-  print(p)
+  
+  #Counter for tracking progress
+  n <- gsub("perm_","",p) %>% 
+    as.numeric()
+  if(n == 1 | n %in% seq(0,5000, by=100) ){print(p)}
   
   #a SE object that will be modified with the permutation labels
   seset.per <- degfilt.se 
@@ -932,9 +943,11 @@ permutation.res <- sapply(col.names, function(p){
   return(list(svm.perm$testError,svm.perm$log.loss, svm.perm$weightsvect))
 
 }, simplify = FALSE)
+```
 
+```{r}
 # saveRDS(permutation.res, "data/svm_permutation_5000_res.RDS")
-# permutation.res <- readRDS("data/svm_")
+permutation.res <- readRDS("data/svm_permutation_5000_res.RDS")
 ```
 
 ```{r}
@@ -1170,8 +1183,12 @@ labs[idx,col.names] <- random.labels
 
 ```{r warning=FALSE}
 #use sapply to create a list of the results of lasso for each permutation of class labels
-lassoPermutation.res <- sapply(col.names, function(p){
-  print(p)
+permutation.lasso <- sapply(col.names[1:10], function(p){
+  
+  #Counter for tracking progress
+  n <- gsub("perm_","",p) %>% 
+    as.numeric()
+  if(n == 1 | n %in% seq(0,5000, by=100) ){print(p)}
   
   #a SE object that will be modified with the permutation labels
   seset.per <- degfilt.se 
@@ -1185,8 +1202,8 @@ lassoPermutation.res <- sapply(col.names, function(p){
   
 }, simplify = FALSE)
 
-# saveRDS(lassoPermutation.res, "data/lasso_permutation_5000_res.RDS")
-lassoPermutation.res <- readRDS("data/lasso_permutation_5000_res.RDS")
+# saveRDS(permutation.lasso, "data/lasso_permutation_5000_res.RDS")
+# permutation.lasso <- readRDS("data/lasso_permutation_5000_res.RDS")
 ```
 
 ```{r}
@@ -1224,7 +1241,7 @@ a 0.12% chance (6/5000) that these genes would randomly assign the correct risk 
 # jpeg("figures/test_errors_hist_5000x_permutations.tiff", height = 5, width = 5,  units="in", res=200)
 hist(test.errors, breaks = seq(0,1, by=0.025), 
      xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests \n with Lasso Regression")
-abline(v=l1.tp$test.error, col="red", lwd=2)
+abline(v=rep1$test.error, col="red", lwd=2)
 # dev.off()
 ```
 
@@ -1383,7 +1400,7 @@ rfdat.train <- as.data.frame(t(assay(deg.seset[,deg.seset$exptset.seahack=="trai
 rfdat.train$class <- as.factor(deg.seset[,deg.seset$exptset.seahack=="train"]$deg.risk)
 # form test set as with train set
 rfdat.test <- as.data.frame(t(assay(deg.seset[,deg.seset$exptset.seahack=="test"])))
-#rfdat.test$class <- as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk)
+rfdat.test$class <- as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk)
 
 rf2k <- randomForest(class ~ .,
                      data = rfdat.train,
@@ -1406,16 +1423,8 @@ pred.rf5k <- predict(rf5k, rfdat.test,'response')
 pred.rf10k <- predict(rf10k, rfdat.test,'response')
 ```
 
-```{r}
-t <- rf2k$importance %>% 
-  as.data.frame() %>% 
-  rownames_to_column("Gene") %>%
-  arrange(desc(MeanDecreaseAccuracy)) #%>% 
-  # filter(grepl("ENSG00000078399", Gene))
-  
-head(t, n=20)
-```
 
+### Model Performance Metrics
 
 ```{r}
 #Find Test Error
@@ -1508,6 +1517,108 @@ nrow(standtable[standtable$rf2ktrees_MeanDecNodeImp>=qrf2k_95quant &
 
 ```
 
+###Permutation Test 
+
+```{r}
+#oringinal data labels
+labs <- data.frame(USI=degfilt.se$TARGET.USI, 
+                   Set=degfilt.se$exptset.seahack,
+                   Risk.group=degfilt.se$Risk.group, 
+                   deg.risk=degfilt.se$deg.risk)
+
+#define colnames for the random labels in the training set. 
+idx <- which(labs$Set=="train")
+col.names <- paste("perm",1:5000, sep="_")
+class.labels <- c(0,1) # 0 == low, 1 == high/std risk
+
+#create random class labels 
+random.labels <- replicate(5000, base::sample(class.labels, 
+                                              size = sum(labs$Set=="train"), 
+                                              replace = TRUE))
+
+#update the labels dataframe with the new randomly created classes. 
+labs[,col.names] <- labs$deg.risk
+labs[idx,col.names] <- random.labels
+```
+
+```{r echo=FALSE}
+#Sanity check 
+# View(labs[,1:100])
+# write.csv(labs, "data/rf_permutation_5000_labels.csv", row.names = FALSE)
+```
+
+```{r warning=FALSE}
+#use sapply to create a list of the results of lasso for each permutation of class labels
+permutation.rf <- sapply(col.names, function(p){
+
+  #Counter for tracking progress
+  n <- gsub("perm_","",p) %>% 
+    as.numeric()
+  if(n == 1 | n %in% seq(0,5000, by=100) ){print(p)}
+  
+  #a SE object that will be modified with the permutation labels
+  seset.per <- degfilt.se 
+  
+  #update the response variable to be the randomly assigned classes
+  seset.per$deg.risk <-  labs[,p]
+  
+  # select training data
+  rfdat.train <- as.data.frame(t(assay(seset.per[,seset.per$exptset.seahack=="train"])))
+  
+  # append binom classes
+  rfdat.train$class <- as.factor(seset.per[,seset.per$exptset.seahack=="train"]$deg.risk)
+  
+  # form test set as with train set
+  rfdat.test <- as.data.frame(t(assay(seset.per[,seset.per$exptset.seahack=="test"])))
+  rfdat.test$class <- as.factor(seset.per[,seset.per$exptset.seahack=="test"]$deg.risk)
+  
+  #run RF with the randomly assigned group labels 
+  rf <- randomForest(class ~ .,
+                     data = rfdat.train,
+                     ntree = 2000,
+                     importance=TRUE,
+                     proximity = TRUE)
+  #Test errors
+  pred.class <- predict(rf, rfdat.test,'response')
+  pred.prob <- predict(rf, rfdat.test,'prob')
+  
+  tab <- table(observed = as.factor(rfdat.test$class), predicted = pred.class)
+  testError <- mean(pred.class !=  rfdat.test$class)
+  log.loss <- LogLoss(y_pred = pred.prob[,1],
+                      y_true=as.numeric(as.character(rfdat.test$class)))
+                      
+  return(list(testError,log.loss))
+
+}, simplify = FALSE)
+
+# saveRDS(permutation.rf, "data/rf_permutation_5000_res.RDS")
+```
+
+```{r}
+rf.test.errors <- sapply(permutation.rf, "[[", 1)
+rf.log.loss <- sapply(permutation.rf, "[[", 2) 
+```
+
+```{r}
+# jpeg("figures/rf_test_error_hist_5000x_permutations.jpg", height = 5, width = 5,  units="in", res=200)
+hist(rf.test.errors,  breaks=seq(0,1, by=0.025), 
+      xlab="Test Error", ylab="Number of Occurances", main="Test Errors from Permutation Tests \n with RF Classification")
+abline(v=mean(pred.rf2k !=  rfdat.test$class), col="red", lwd=2)
+# dev.off()
+```
+
+```{r}
+# jpeg("figures/ff_logloss_hist_5000x_permutations.jpg", height = 5, width = 5,  units="in", res=200)
+hist(rf.log.loss, breaks=seq(0,1.2, by=0.025), 
+     xlab="Log Loss", ylab="Number of Occurances", main="Log loss from Permutation Tests \n with RF Classification")
+abline(v=LogLoss(y_pred = predict(rf2k, rfdat.test,'prob')[,2],
+                 y_true=as.numeric(as.character(rfdat.test$class))), 
+       col="red", lwd=2)
+# dev.off()
+```
+
+
+    
 ## XGboost
 Random forest was run again, this time with boosting.
 
@@ -1667,108 +1778,6 @@ write.csv(standtable, file=paste0(data.dir, sys.sep, "standouttable.csv"))
 
 
 
-#Gene Ontology 
-
-```{r}
-# BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-library(goseq)
-library(gage)
-
-data("kegg.gs")
-kg.hsa=kegg.gsets("hsa")
-
-```
-
-```{r message=FALSE, warning=FALSE}
-supportedOrganisms() %>%
-  filter(grepl("hg19|hg38", Genome))
-```
-
-## GO and KEGG Enrichment for all DEGs
-
-```{r}
-#All input genes from the 
-genes <- rownames(DGE$voomTransformation$E) %>% 
-  gsub("\\.[0-9]{1,}", "", .)
-
-#DEGs present in the genes 'universe'
-all.degs <- ifelse(genes %in% standtable$ensembl_gene_id , 1,0) %>% 
-  set_names(genes)
-table(all.degs)
-
-all.pwf <- nullp(all.degs, "hg38", "ensGene")
-
-all.GO <- goseq(all.pwf, "hg38", "ensGene",
-               test.cats=c("GO:BP", "GO:MF"), 
-               method="Wallenius") %>%
-  mutate(FDR=p.adjust(over_represented_pvalue, method = "BH")) %>%
-  filter(FDR < 0.1) %>% 
-  filter(numInCat > 20 & numInCat < 450)
-
-head(all.GO) 
-dim(all.GO) #518
-```
-
-```{r}
-all.KEGG <- goseq(all.pwf, "hg38", "ensGene",
-               test.cats=c("KEGG"), 
-               method="Wallenius") %>%
-  mutate(FDR=p.adjust(over_represented_pvalue, method = "BH")) %>%
-  filter(FDR < 0.1) %>% 
-  filter(numInCat > 20 & numInCat < 450) %>% 
-  left_join(.,  data.frame(PathwayName=names(kg.hsa$kg.sets)) %>% 
-              mutate(Pathway_Accession=gsub("hsa","", PathwayName) %>% 
-                       gsub("(^[0-9]{5})\\D+[A-Za-z0-9].+", "\\1", .)), 
-            by=c("category"="Pathway_Accession"))
-
-head(all.KEGG)
-dim(all.KEGG)
-# write.csv(all.KEGG, "data/TARGET_AML_High.Std.Risk_vs_LowRisk_KEGG.csv", row.names = FALSE)
-```
-
-##Examination of Selected Features by Lasso, Weight, or Importance 
-
-```{r}
-lasso.features <- names(rep1$nonzero.coef) %>% 
-  gsub("\\.[0-9]{1,}","", .)
-
-lasso.1_All <-  ifelse(genes %in% lasso.features , 1,0) %>% 
-  set_names(genes)
-table(lasso.1_All)
-
-lasso.1_All.pwf <- nullp(lasso.1_All, "hg38", "ensGene")
-
-lasso.1_DEGs <- ifelse( standtable$ensembl_gene_id %in% lasso.features , 1,0) %>% 
-  set_names(standtable$ensembl_gene_id )
-table(lasso.1_DEGs)
-
-lasso.1_DEGs.pwf <- nullp(lasso.1_DEGs, "hg38", "ensGene")
-```
-
-```{r}
-lasso.1_All.GO <- goseq(lasso.1_All.pwf, "hg38", "ensGene",
-               test.cats=c("GO:BP", "GO:MF"), 
-               method="Wallenius") %>%
-  mutate(FDR=p.adjust(over_represented_pvalue, method = "BH")) %>%
-  # filter(FDR < 0.1) %>% 
-  filter(numInCat > 20 & numInCat < 450) %>%
-  arrange(desc(numDEInCat), over_represented_pvalue)
-
-head(lasso.1_All.GO)
-```
-
-```{r}
-lasso.1_DEGs.GO <- goseq(lasso.1_DEGs.pwf, "hg38", "ensGene",
-               test.cats=c("GO:BP", "GO:MF"), 
-               method="Wallenius") %>%
-  mutate(FDR=p.adjust(over_represented_pvalue, method = "BH")) %>%
-  # filter(FDR < 0.1) %>% 
-  filter(numInCat > 20 & numInCat < 450) %>% 
-  arrange(desc(numDEInCat), over_represented_pvalue)
-
-head(lasso.1_DEGs.GO)
-```
 
 
 
