@@ -1,0 +1,484 @@
+---
+title: "Hyperparameter Optimization"
+author: "Sean Maden"
+date: "4/25/2019"
+output: html_document
+---
+
+```{r, setup-load}
+library(limma)
+library(xgboost)
+library(glmnet)
+library(SummarizedExperiment)
+library(e1071)
+library(ROCR)
+library(MLmetrics)
+library(randomForest)
+
+load("sesetfilt_degseahack_targetaml.rda")
+
+```
+
+```{r, algofunctions}
+# Lasso
+runLasso <- function(seset, alpha, seed=2019, type.measure="class"){
+  # credit base code: Jenny Smith
+  # runLasso
+  # Fit a model using penalized regression with lasso
+  # Arguments:
+  # * seset: Valid summarized experiment object
+  # * alpha: set alpha in lasso function
+  # * seed: (int) set seed for randomization
+  # Returns:
+  # * resultslist (list) : Results of lasso fit
+  
+  require(glmnet)
+  require(SummarizedExperiment)
+  set.seed(seed) 
+
+  #define train/test sets 
+  train.names = colnames(assay(seset[,seset$exptset.seahack=="train"]))
+  test.names = colnames(assay(seset[,seset$exptset.seahack=="test"]))
+  
+  #define predictors and response variables
+  df = t(assay(seset))
+  response <- seset$deg.risk
+  predictors <- rownames(seset)
+  
+  y <- factor(response); names(y) <- colnames(assay(seset)) # response var obj
+  x = df[,predictors] # genes of interest
+  contrast <- contrasts(y)
+  
+  #lambda values
+  grid <- 10^ seq(10,-2, length=100)
+  
+  #standardize is an option to mean center. 
+  #Don't use since we want to keep the natural variation and expression is already normalized for sample to  sample comparisons.
+  standardize = FALSE
+  
+  fit <- glmnet(x[train.names,], y[train.names], family = "binomial", alpha=alpha, 
+                standardize = standardize, lambda = grid, intercept = FALSE)
+  
+  # use cross-validation on the training model.CV only for lambda
+  cv.fit <- cv.glmnet(x[train.names,], y[train.names], family = "binomial",
+                      type.logistic="modified.Newton", standardize = standardize,
+                      lambda = grid, alpha=alpha, nfolds = length(train.names), #LOOCV 
+                      type.measure = type.measure, intercept = FALSE)
+  
+  #Select lambda min.
+  lambda.min <- cv.fit$lambda.min
+  
+  #predict the classes
+  pred.class <- predict(fit, newx = x[test.names,], type="class", s=lambda.min)
+  pred.prob <- predict(fit, newx = x[test.names,], type="response", s=lambda.min)
+  
+  
+  #find the test error
+  tab <- table(pred.class,y[test.names])
+  testError <- mean(pred.class != y[test.names]) #how many predicted classes were incorrect
+  log.loss <- LogLoss(y_pred = pred.prob[,1], y_true = as.numeric(as.character(y[test.names]))) #difference from predicted label to true label
+    
+  #Fit the full dataset.
+  final <- glmnet(x, y,family = "binomial", standardize = standardize, 
+                  lambda = grid, alpha = alpha, intercept = FALSE)
+  
+  #Extract the coefficients
+  coef <- predict(final, type="coefficients", s=lambda.min)
+  idx <- which(!as.numeric(coef)==0)
+  nonZero <- coef[idx,]
+  
+  #Results 
+  resultslist <- list("training.set"=train.names, 
+                      "testing.set"=test.names, 
+                      "contrast"=contrast, 
+                      "train.fit"=fit, 
+                      "cv.fit"= cv.fit,
+                      "pred.probability"=pred.prob,
+                      "confusionMatrix"=tab,
+                      "test.error"=testError, 
+                      "log.loss"=log.loss,
+                      "final.model"= final, 
+                      "nonzero.coef"=nonZero, 
+                      "seed"=seed)
+
+  return(resultslist)
+}
+
+#Function for SVM classification. 
+runSVM <- function(seed,kerneltype="linear",seset, weightfilt=FALSE){
+  # credit base code: Sean Maden
+  # run SVM optimization
+  # Arguments
+  #   * seed : set seed (int) for randomization
+  #   * kerneltype : (str) valid kernel type class for SVM (e.g. 'linear', 'radial', etc.)
+  #   * seset : summarized expirment object with both test and training set data. 
+  #       * ndtr : training dataset (excluding sample classes)
+  #       * ndtr.classes : classes for training sampels (vector) with 1:1 correspondence 
+  #       with trainset rows
+  #       * ndte : test data (data frame or matrix), excluding classes
+  #       * ndte.classes : classes for test samples (vector), with 1:1 row:pos correspondence
+  #   * weightfilt : (FALSE or numeric float) top fraction weights to use in model 
+  #       (if FALSE, then all weights used) 
+  # Returns
+  #   * rl (list) : list containing model fitted, predictions, and performacne metrics
+  require(e1071); require(ROCR); require(MLmetrics)
+  rl <- list(); str.options <- ""
+  set.seed(seed)
+  
+  #training/testing sets
+  ndtr <- t(assay(seset[,seset$exptset.seahack=="train"]))
+  ndtr.classes <- seset[,seset$exptset.seahack=="train"]$deg.risk
+  
+  ndte <- t(assay(seset[,seset$exptset.seahack=="test"]))
+  ndte.classes <- seset[,seset$exptset.seahack=="test"]$deg.risk
+  # train svm model
+  svm_model <- svm(as.factor(ndtr.classes)~., 
+                   data=ndtr, 
+                   method="C-classification", 
+                   kernel=kerneltype,
+                   probability=TRUE)
+  weightsvect <- ndtr.weights <- t(svm_model$coefs) %*% svm_model$SV
+  if(weightfilt){
+    str.options <- c(str.options,paste0("weight filt = ",weightfilt))
+    # order training data on relative weights
+    ndtr.weightsort <- ndtr[,rev(order(abs(ndtr.weights)))]
+    # select only top proportion weights
+    nweight.col = round(ncol(ndtr.weightsort)*weightfilt,0)
+    ndtr.weightfilt <- ndtr.weightsort[,c(1:nweight.col)]
+    str.options <- c(str.options,paste("cols_retained:",colnames(ndtr.weightfilt),collapse=";"))
+    # redefine training set, rerun SVM optimization
+    ndtr <- ndtr.weightfilt
+    svm_model <- svm(as.factor(ndtr.classes)~., 
+                     data=ndtr, 
+                     method="C-classification", 
+                     kernel=kerneltype,
+                     probability=TRUE)
+  } else{
+    str.options <- c(str.options,"no weight filt")
+  }
+  
+  #training and test set predictions.
+  pred_train <- predict(svm_model, ndtr, decision.valuesq = TRUE, probability=TRUE)
+  pred_test <- predict(svm_model, ndte, decision.values = TRUE, probability=FALSE)
+  pred_test2 <- predict(svm_model, ndte, decision.values = TRUE, probability=TRUE)
+  #find the test errors
+  tab <- table(pred = pred_test, true = ndte.classes)
+  testError <- mean(pred_test != ndte.classes) #how many predicted classes were incorrect
+  log.loss <- LogLoss(y_pred = attr(pred_test2, which="probabilities")[,1], y_true = as.numeric(ndte.classes))
+  # get performance metrics
+  pred <- prediction(as.numeric(attr(pred_test,"decision.values")),ndte.classes)
+  perf <- performance(pred,"tpr","fpr")
+  ppred <- pred_test[pred_test==1] 
+  tppred <- ndte.classes[pred_test==1]
+  ppred <- as.numeric(as.character(ppred))
+  testprec <- length(ppred[ppred==tppred])/length(ppred) # test precision
+  rposi <- ndte.classes==1
+  rtpred <- ndte.classes[rposi]
+  rppred <- pred_test[rposi]
+  rppred <- as.numeric(as.character(rppred))
+  testrec <- length(rppred[rppred==1])/length(rppred) # test recall
+  
+  # return model, pred's, and performance metrics
+  rl <- list(str.options,
+             svm_model,
+             weightsvect,
+             pred_train,
+             pred_test,
+             pred_test2,
+             perf,
+             tppred,
+             testprec,
+             testrec, 
+             tab,
+             testError, 
+             log.loss)
+  names(rl) <- c("options_string",
+                 "svm_model",
+                 "weightsvect",
+                 "predictions_train",
+                 "predictions_test",
+                 "predictions_test2",
+                 "performance_test",
+                 "TPR_test",
+                 "precision_test",
+                 "recall_test", 
+                 "confusionMatrix",
+                 "testError",
+                 "log.loss")
+  return(rl)
+  
+}
+```
+
+# Methods
+
+# Hyperparameter Optimization Runs
+
+## SVM
+```{r, svmhpprun}
+# Run 1 -- SVM with linear kernel, no weight filter
+svm1 <- runSVM(seed=50, kerneltype="linear", seset = degfilt.se)
+
+# Run 2 -- SVM with linear kernel, 50% weight filter
+svm2 <- runSVM(seed=50, kerneltype="linear", seset = degfilt.se,
+               weightfilt = 0.5)
+
+# Run 3 -- SVM with linear kernel, no weight filter
+svm3 <- runSVM(seed=50, kerneltype="radial", seset = degfilt.se)
+
+# Run 4 -- SVM with linear kernel, 50% weight filter
+svm4 <- runSVM(seed=50, kerneltype="radial", seset = degfilt.se,
+               weightfilt = 0.5)
+
+svm.resultslist = list("svm1"=svm1, "svm2"=svm2, "svm3"=svm3, "svm4"=svm4)
+
+save(svm.resultslist, file="svm4reps_resultslist.rda")
+```
+
+## Lasso
+
+```{r, lassohpprun}
+# lasso model fitting reps and analysis
+# lasso reps and model assessment
+# Note: reps of lasso were performed on DEGs for TARGET pediatric AML samples
+#   Models were optimized using the training subset, then assessed using the validation subset
+#   Lasso iterations describe runs after performing lasso on subsets of initial DEGs (>1st rep)
+# lasso reps
+rep1 <- runLasso(seset=degfilt.se, alpha=1)
+rep2 <- runLasso(seset=degfilt.se, alpha=0.8)
+rep3 <- runLasso(seset=degfilt.se, alpha=1.2)
+
+lasso.resultslist <- replist <- list(rep1, rep2, rep3)
+
+save(lasso.resultslist, file = "lasso_resultslist.rda")
+
+```
+
+## Random Forest
+
+```{r, rfhpprun}
+require(randomForest)
+set.seed(20)
+
+deg.seset <- degfilt.se
+# select training data
+rfdat.train <- as.data.frame(t(assay(deg.seset[,deg.seset$exptset.seahack=="train"])))
+# append binom classes
+rfdat.train$class <- as.factor(deg.seset[,deg.seset$exptset.seahack=="train"]$deg.risk)
+# form test set as with train set
+rfdat.test <- as.data.frame(t(assay(deg.seset[,deg.seset$exptset.seahack=="test"])))
+#rfdat.test$class <- as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk)
+
+rf2k <- randomForest(class ~ .,
+                     data = rfdat.train,
+                     ntree = 2000,
+                     importance=TRUE,
+                     proximity = TRUE)
+
+rf5k <- randomForest(class ~ .,
+                     data = rfdat.train,
+                     ntree = 5000,
+                     proximity = TRUE)
+
+rf10k <- randomForest(class ~ .,
+                     data = rfdat.train,
+                     ntree = 10000,
+                     proximity = TRUE)
+# assess model fit
+pred.rf2k <- predict(rf2k, rfdat.test,'response')
+pred.rf5k <- predict(rf5k, rfdat.test,'response')
+pred.rf10k <- predict(rf10k, rfdat.test,'response')
+
+cm.2k <- table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf2k)
+
+cm.5k <- table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf5k)
+
+cm.10k <- table(observed = as.factor(deg.seset[,deg.seset$exptset.seahack=="test"]$deg.risk), 
+      predicted = pred.rf10k)
+
+rf.resultlist.name = "rf_noboost_2k5k10ktrees_allresultslist.rda"
+rf.returnlist <- list('rf2k.results'=list('fitmodel'=rf2k,'conf.matrix'=cm.2k),
+                      'rf5k.results'=list('fitmodel'=rf5k,'conf.matrix'=cm.5k),
+                      'rf10k.results'=list('fitmodel'=rf10k,'conf.matrix'=cm.10k))
+save(rf.returnlist, file="rfiter-noboost_resultlist_smtest.rda")
+```
+
+## XGBoost
+
+```{r, xgbhpprun}
+# XGBoost, or "extreme gradient boost", a type of ensemble learning method
+# ref and tutorials: https://cran.r-project.org/web/packages/xgboost/index.html
+seset <- degfilt.se
+rownames(seset) <- paste0(rownames(seset),"; ",rowData(seset)$hgnc_symbol)
+# run xgb on training data
+xgtrain <- t(assay(seset[,seset$exptset.seahack=="train"]))
+xgtrainlabel = seset[,seset$exptset.seahack=="train"]$deg.risk
+xgtest <- t(assay(seset[,seset$exptset.seahack=="test"]))
+xgtestlabel = seset[,seset$exptset.seahack=="test"]$deg.risk
+
+# rep1
+xg1 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 2,
+               eta = 1, nthread = 2, nrounds = 2, objective = "binary:logistic")
+xg1i <- xgb.importance(feature_names = colnames(xgtrain), model = xg1)
+
+# rep2
+xg2 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 50,
+               eta = 1, nthread = 2, nrounds = 2, objective = "binary:logistic")
+xg2i <- xgb.importance(feature_names = colnames(xgtrain), model = xg2)
+
+# rep3
+xg3 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 50,
+               eta = 1, nthread = 2, nrounds = 50, objective = "binary:logistic")
+xg3i <- xgb.importance(feature_names = colnames(xgtrain), model = xg3)
+
+# rep4 
+xg4 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 100,
+               eta = 1, nthread = 2, nrounds = 50, objective = "binary:logistic")
+xg4i <- xgb.importance(feature_names = colnames(xgtrain), model = xg4)
+
+# rep5
+xg5 <- xgboost(data = xgtrain, label = xgtrainlabel, max_depth = 100,
+               eta = 1, nthread = 2, nrounds = 100, objective = "binary:logistic")
+xg5i <- xgb.importance(feature_names = colnames(xgtrain), model = xg5)
+
+xg.resultslist = list("rep1"=xg1, "rep2"=xg2, "rep3"=xg3, "rep4"=xg4, "rep5"=xg5)
+xgi.list <- list("imp1"=xg1i, "imp2"=xg2i, "imp3"=xg3i, "imp4"=xg4i, "imp5"=xg5i)
+for(i in 1:length(xg.resultslist)){
+  xg.resultslist[[i]]$importance <- xgi.list[[i]]
+}
+
+# append performance metrics on test data
+postot <- ncol(degfilt.se[,degfilt.se$exptset.seahack=="test" & degfilt.se$deg.risk==1])
+falsetot <- ncol(degfilt.se[,degfilt.se$exptset.seahack=="test" & degfilt.se$deg.risk==0])
+for(i in 1:length(xg.resultslist)){
+  # test set predictions
+  predi <- predict(xg.resultslist[[i]], xgtest) # testset predictions
+  pbi <- ifelse(pred1>0.5, 1, 0) # binarized probabilities
+  cmi = table(pb1, xgtestlabel) # confusion matrix
+  
+  # performance metrics
+  tp = cmi[2,2]
+  fp = cmi[2,1]
+  tn = cmi[1,1]
+  fn = cmi[1,2]
+  
+  mean.err <- mean(as.numeric(pred1 > 0.5) != xgtestlabel) # mean.err
+  tpri = (cmi[2,2]/postot)
+  tnri = (cmi[1,1]/falsetot)
+  fdri = 1-(tp/(tp+fp))
+  forvali = 1-(tn/(tn+fn))
+  
+  xg.resultslist[[i]]$performance_testset <- list("confusionMatrix"=cmi,
+                                              "mean_err"=mean.err,
+                                              "tpr"=tpri,
+                                              "tnr"=tnri,
+                                              "fdr"=fdri,
+                                              "for"=forvali)
+}
+
+# testset performances df
+dfxgp <- matrix(xg.resultslist[[1]]$performance_testset[2:6], nrow=1)
+for(i in 2:length(xg.resultslist)){
+  dfxgp <- rbind(dfxgp,matrix(xg.resultslist[[i]]$performance_testset[2:6], nrow=1))
+}
+colnames(dfxgp) <- c(names(xg.resultslist[[1]]$performance_testset[2:6]))
+rownames(dfxgp) <- c(paste0("rep",seq(1,length(xg.resultslist))))
+xg.resultslist[["testperfdf"]] <- dfxgp
+
+save(xg.resultslist, file="xgb_resultslist.rda")
+```
+
+# Performance Outcomes
+
+```{r, perftable}
+# Make table summarizing hyperparameter optimization results
+
+# preamble and load objects
+load("sesetfilt_degseahack_targetaml.rda")
+load("svm4reps_resultslist.rda")
+load("lasso_resultslist.rda")
+load("rf_noboost_2k5k10ktrees_allresultslist.rda")
+load("xgb_resultslist.rda")
+
+svml <- svm.resultslist
+lassol <- lasso.resultslist
+rfl <- rf.returnlist
+xgbl <- xg.resultslist
+
+train.classes <- degfilt.se[,degfilt.se$exptset.seahack=="train"]$deg.risk
+test.classes <- degfilt.se[,degfilt.se$exptset.seahack=="test"]$deg.risk
+
+#------------------------------
+# retrieve performance metrics
+#------------------------------
+svm1.cm <- table(svml$svm1$predictions_test, test.classes)
+svm2.cm <- table(svml$svm2$predictions_test, test.classes)
+svm3.cm <- table(svml$svm3$predictions_test, test.classes)
+svm4.cm <- table(svml$svm4$predictions_test, test.classes)
+
+lasso1.cm <- lassol[[1]]$confusionMatrix
+lasso2.cm <- lassol[[2]]$confusionMatrix
+lasso3.cm <- lassol[[3]]$confusionMatrix
+#lasso4.cm <- lassol[[4]]$confusionMatrix
+
+rfl1.cm <- t(rfl$rf2k.results$conf.matrix)
+rfl2.cm <- t(rfl$rf5k.results$conf.matrix)
+rfl3.cm <- t(rfl$rf10k.results$conf.matrix)
+
+xgb1.cm <- xgbl$rep1$performance_testset$confusionMatrix
+xgb2.cm <- xgbl$rep2$performance_testset$confusionMatrix
+xgb3.cm <- xgbl$rep3$performance_testset$confusionMatrix
+xgb4.cm <- xgbl$rep4$performance_testset$confusionMatrix
+
+# note all CM have rows as pred, col as classes
+cml <- list(svm=list(i1=svm1.cm,
+                     i2=svm2.cm,
+                     i3=svm3.cm,
+                     i4=svm4.cm),
+            lasso=list(i1=lasso1.cm,
+                       i2=lasso2.cm,
+                       i3=lasso3.cm),
+            rf=list(i1=rfl1.cm,
+                    i2=rfl2.cm,
+                    i3=rfl3.cm),
+            xgb=list(i1=xgb1.cm,
+                     i2=xgb2.cm,
+                     i3=xgb3.cm,
+                     i4=xgb4.cm))
+
+#------------------------------
+# aggregate performance metrics
+#------------------------------
+cmt <- matrix(nrow=0,ncol=10)
+for(ll in 1:length(cml)){
+  ll.i <- cml[[ll]]
+  namel <- names(cml)[ll]
+  cmidat <- c()
+  for(i in 1:length(ll.i)){
+    cmidat <- c(namel, as.character(i))
+    cmi = ll.i[[i]]
+    # tn, fn, tp, fp
+    cmidat <- c(cmidat, 
+                cmi[1,1], cmi[2,1],
+                cmi[2,2], cmi[1,2])
+    # tpr, tnr, fdr, for 
+    cmidat <- c(cmidat, 
+                cmi[2,2]/length(test.classes[test.classes==1]), # tpr
+                cmi[1,1]/length(test.classes[test.classes==0]), # tnr
+                cmi[2,1]/(cmi[2,1]+length(test.classes[test.classes==1])), # fdr
+                cmi[1,2]/(cmi[1,2]+length(test.classes[test.classes==0])) # for
+                )
+    cmt <- rbind(cmt, cmidat)
+    message(ll," ",i)
+  }
+  message(ll)
+}
+colnames(cmt) <- c("algorithm","rep","TN","FN","TP","FP",
+                   "TPR","TNR","FDR","FOR")
+
+save(cmt, file="hpp-perf-table.rda")
+write.csv(cmt, file="hpp-perf-table.csv")
+
+```
